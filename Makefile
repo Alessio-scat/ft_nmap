@@ -9,6 +9,12 @@ HEADER_FILE				= ft_nmap.h
 
 DIR						= src/
 SRC			 			= main.c \
+							parsing/parsing.c \
+							parsing/check/check_file.c \
+							parsing/check/check_ip.c \
+							parsing/check/check_ports.c \
+							parsing/check/check_scan.c \
+							parsing/check/check_speedup.c \
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	
@@ -21,7 +27,7 @@ CLEAR					= clear
 
 
 $(BUILD_DIR)%.o: 		$(DIR)%.c $(HEADER_DIR)/$(HEADER_FILE)
-						@mkdir -p $(BUILD_DIR)
+						@mkdir -p $(dir $@)
 						$(GCC) $(CFLAGS) -I$(HEADER_DIR) -o $@ -c $<
 
 
