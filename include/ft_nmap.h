@@ -12,6 +12,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <regex.h>
+#include <ctype.h>
 
 
 typedef struct {
