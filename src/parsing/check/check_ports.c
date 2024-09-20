@@ -7,7 +7,6 @@
 
 int validate_ports(const char *ports) {
     regex_t regex;
-    // Compile a regex to match the pattern for ports and ranges
     int ret = regcomp(&regex, "^([0-9]+(-[0-9]+)?)(,[0-9]+(-[0-9]+)?)*$", REG_EXTENDED);
     if (ret) {
         fprintf(stderr, "Error: Failed to compile regex for port validation.\n");
@@ -17,7 +16,6 @@ int validate_ports(const char *ports) {
     ret = regexec(&regex, ports, 0, NULL, 0);
     regfree(&regex);
 
-    // Check if regex failed to match, indicating invalid syntax
     if (ret != 0)
         return 0;
 

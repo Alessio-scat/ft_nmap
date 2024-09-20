@@ -18,9 +18,14 @@
 typedef struct {
     char *ip_address;
     char *ports;
-    char *file;
     int speedup;
     char *scan_type;
+    
+    //file
+    char *file;
+    char **ip_list;
+    int ip_count;
+    
 } ScanOptions;
 
 /*
