@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <regex.h>
 #include <ctype.h>
+#include <pthread.h>
 
 
 typedef struct {
