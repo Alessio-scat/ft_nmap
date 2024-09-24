@@ -15,13 +15,15 @@
 #include <ctype.h>
 #include <pthread.h>
 
+#define MAX_PORT 1024
 
 typedef struct {
     char *ip_address;
     char *ports;
     int speedup;
     char *scan_type;
-    
+    int portsTab[1024];
+    int portsTabSize;   
     //file
     char *file;
     char **ip_list;
