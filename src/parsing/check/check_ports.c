@@ -73,11 +73,21 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
     return 1; // Ports valides et stockés dans portsTab
 }
 
+int comp (const void * elem1, const void * elem2) 
+{
+    int f = *((int*)elem1);
+    int s = *((int*)elem2);
+    if (f > s) return  1;
+    if (f < s) return -1;
+    return 0;
+}
+
 // Handle the --ports option
 void handle_ports_option(int *i, int ac, char **av, ScanOptions *options) {
     if (*i + 1 < ac) {
         if (validate_and_parse_ports(av[*i + 1], options)) {
             options->ports = av[*i + 1];
+            qsort(options->portsTab, options->portsTabSize, sizeof(int), comp);
             (*i)++;
         } else {
             fprintf(stderr, "Error: Invalid port range or list: %s\n", av[*i + 1]);
