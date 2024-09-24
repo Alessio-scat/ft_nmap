@@ -31,6 +31,14 @@ typedef struct {
     
 } ScanOptions;
 
+typedef struct {
+    char *ip;
+    int *ports;
+    int start_index;
+    int end_index;
+    char *scan_type;
+} ScanTask;
+
 /*
     parsing.c
 */
