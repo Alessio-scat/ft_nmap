@@ -39,7 +39,6 @@ int main(int ac, char **av)
     int current_index = 0;
 
     for (int i = 0; i < options.speedup; i++) {
-        printf("speedup : %d\n", i);
         tasks[i].ip = options.ip_address;
         tasks[i].ports = options.portsTab;
         tasks[i].scan_type = options.scan_type;
@@ -59,7 +58,6 @@ int main(int ac, char **av)
         }
 
         current_index = tasks[i].end_index + 1;
-        printf("\n");
     }
 
     // Attendre la fin de tous les threads
