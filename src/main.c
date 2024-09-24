@@ -14,7 +14,7 @@ int main(int ac, char **av)
         printf("   Stored IP: %s\n", options.ip_list[j]);
     printf("Speedup: %d\n", options.speedup);
     printf("Scan Type: %s\n", options.scan_type);
-    printf("--------------------------------\n");
+    printf("---------------------------------\n");
 
 
     for (int j = 0; j < options.ip_count; j++)
