@@ -14,6 +14,7 @@
 #include <regex.h>
 #include <ctype.h>
 #include <pthread.h>
+#include <ifaddrs.h>
 
 #define MAX_PORT 1024
 
@@ -22,7 +23,7 @@ typedef struct {
     char *ports;
     int speedup;
     char *scan_type;
-    int portsTab[1024];
+    int portsTab[MAX_PORT];
     int portsTabSize;   
     //file
     char *file;
@@ -31,10 +32,24 @@ typedef struct {
     
 } ScanOptions;
 
+typedef struct {
+    u_int32_t source_address;
+    u_int32_t dest_address;
+    u_int8_t placeholder;
+    u_int8_t protocol;
+    u_int16_t tcp_length;
+} psh;
+
 /*
     parsing.c
 */
 void parse_arguments(int ac, char **av, ScanOptions *options);
 
+//scan SYN
+int syn_scan(char *target_ip, int target_port);
+
+//utils.c
+unsigned short checksum(void *b, int len);
+char *get_local_ip();
 
 #endif

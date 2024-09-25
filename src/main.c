@@ -24,5 +24,7 @@ int main(int ac, char **av)
     for (int j = 0; j < options.ip_count; j++)
         free(options.ip_list[j]);
     free(options.ip_list);
+    int i = syn_scan(options.ip_address, options.portsTab[0]);
+    printf("%d\n", i);
     return 0;
 }

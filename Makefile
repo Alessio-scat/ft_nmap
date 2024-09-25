@@ -15,6 +15,8 @@ SRC			 			= main.c \
 							parsing/check/check_ports.c \
 							parsing/check/check_scan.c \
 							parsing/check/check_speedup.c \
+							scan/syn.c \
+							scan/utils.c \
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	
