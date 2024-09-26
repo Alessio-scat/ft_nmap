@@ -81,6 +81,38 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     free(pseudogram);
 }
 
+void receive_response(int sock)
+{
+    char buffer[4096];
+    struct sockaddr_in source;
+    socklen_t source_len = sizeof(source);
+    int received_bytes;
+    while ((received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&source, &source_len)) > 0) {
+        struct iphdr *iph = (struct iphdr *)buffer; // Pointeur vers l'en-tête IP
+        struct tcphdr *tcph = (struct tcphdr *)(buffer + iph->ihl * 4); // Pointeur vers l'en-tête TCP, après l'en-tête IP
+
+        // Vérifier que le paquet reçu est une réponse TCP
+        if (iph->protocol == IPPROTO_TCP) {
+            printf("Réponse reçue de %s\n", inet_ntoa(source.sin_addr));
+
+            // Vérifier si c'est une réponse SYN-ACK (port ouvert)
+            if (tcph->syn == 1 && tcph->ack == 1) {
+                printf("Port %d est ouvert (SYN-ACK reçu)\n", ntohs(tcph->dest));
+                break;
+            }
+            // Vérifier si c'est une réponse RST (port fermé)
+            else if (tcph->rst == 1) {
+                printf("Port %d est fermé (RST reçu)\n", ntohs(tcph->dest));
+                break;
+            }
+        }
+    }
+
+    if (received_bytes < 0) {
+        perror("Erreur lors de la réception du paquet");
+    }
+}
+
 int syn_scan(char *target_ip, int target_port)
 {
     printf("localhost %s\n", get_local_ip());
@@ -105,6 +137,9 @@ int syn_scan(char *target_ip, int target_port)
     build_tcp_header(tcph, target_port);
     // Envoi du paquet
     send_packet(sock, packet, iph, &dest);
+
+    // Recevoir et analyser les réponses
+    receive_response(sock);
 
     // Fermeture du socket
     close(sock);
