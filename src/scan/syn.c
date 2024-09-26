@@ -36,7 +36,7 @@ void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest) {
 
 // Fonction pour construire l'en-tête TCP
 void build_tcp_header(struct tcphdr *tcph, int target_port) {
-    tcph->source = htons(12345); // Port source (aléatoire)
+    tcph->source = htons(80); // Port source (aléatoire)
     tcph->dest = htons(target_port);      // Port cible
     tcph->seq = 0;
     tcph->ack_seq = 0;
@@ -92,7 +92,7 @@ void receive_response(int sock)
         struct tcphdr *tcph = (struct tcphdr *)(buffer + iph->ihl * 4); // Pointeur vers l'en-tête TCP, après l'en-tête IP
 
         // Vérifier que le paquet reçu est une réponse TCP
-        if (iph->protocol == IPPROTO_TCP) {
+        if (iph->protocol == IPPROTO_TCP ) {
             printf("Réponse reçue de %s\n", inet_ntoa(source.sin_addr));
 
             // Vérifier si c'est une réponse SYN-ACK (port ouvert)
