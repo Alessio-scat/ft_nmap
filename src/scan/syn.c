@@ -77,7 +77,7 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
         printf("Paquet envoyé avec succès vers le port %d\n", ntohs(tcph->dest));
     }
 
-    // Libérer la mémoire allouée pour le pseudo-header
+    // Libérer la mémoire alloué pour le pseudo-header
     free(pseudogram);
 }
 
