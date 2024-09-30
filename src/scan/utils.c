@@ -32,7 +32,7 @@ char *get_local_ip() {
 	while (ifa->ifa_next != NULL)
 	{
 		if (ifa->ifa_addr->sa_family == AF_INET &&
-			strcmp("eth0", ifa->ifa_name) == 0)
+			(strcmp("eth0", ifa->ifa_name) == 0 || strcmp("enp0s3", ifa->ifa_name) == 0))
 		{
 			addr = strdup(inet_ntoa(((struct sockaddr_in*)ifa->ifa_addr)->sin_addr));
 			break;

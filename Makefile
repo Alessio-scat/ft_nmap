@@ -44,7 +44,7 @@ clear:
 						$(CLEAR)
 						
 $(NAME): 				$(OBJECTS)
-						@$(GCC) $(OBJECTS) -o $(NAME) -lpcap
+						@$(GCC) $(OBJECTS) -o $(NAME) 
 						@echo "$(GREEN)[✓] $(NAME) created !$(DEFAULT)"
 						
 clean:					
