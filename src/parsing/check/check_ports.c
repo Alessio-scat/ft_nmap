@@ -47,7 +47,7 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
 
         if (strchr(token, '-') != NULL) { // Gérer les plages comme "5-15"
             sscanf(token, "%d-%d", &start, &end);
-            if (start < 1 || end > 1024 || start > end) {
+            if (start < 1 || end > MAX_PORT || start > end) {
                 free(ports_copy);
                 return 0;
             }
@@ -58,7 +58,7 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
             }
         } else { // Gérer les ports individuels comme "80"
             start = atoi(token);
-            if (start < 1 || start > 1024) {
+            if (start < 1 || start > MAX_PORT) {
                 free(ports_copy);
                 return 0;
             }
