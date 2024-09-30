@@ -51,12 +51,12 @@ void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest) {
     iph->daddr = dest->sin_addr.s_addr;
 
     // Calcul du checksum pour l'en-tête IP
-    iph->check = checksum((unsigned short *)iph, iph->tot_len);
+    iph->check = checksum((unsigned short *)iph, sizeof(struct iphdr));
 }
 
 // Fonction pour construire l'en-tête TCP
 void build_tcp_header(struct tcphdr *tcph, int target_port) {
-    tcph->source = htons(12345);  // Port source (aléatoire)
+    tcph->source = htons(rand() % 65535 + 1024);  // Port source (aléatoire)
     tcph->dest = htons(target_port);  // Port cible
     tcph->seq = 0;
     tcph->ack_seq = 0;
@@ -74,7 +74,7 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     // Déclare et initialise le pseudo-header pour le calcul du checksum
     psh pshdr;
     pshdr.source_address = iph->saddr; // Adresse IP source
-    pshdr.dest_address = dest->sin_addr.s_addr; // Adresse IP destination
+    pshdr.dest_address = iph->daddr; // Adresse IP destination
     pshdr.placeholder = 0; // Champ de remplissage
     pshdr.protocol = IPPROTO_TCP; // Protocole TCP
     pshdr.tcp_length = htons(sizeof(struct tcphdr)); // Longueur de l'en-tête TCP
@@ -168,6 +168,20 @@ void receive_response_pcap(char *interface, int target_port) {
     handle = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf);
     if (handle == NULL) {
         fprintf(stderr, "Impossible d'ouvrir l'interface : %s\n", errbuf);
+        return;
+    }
+    struct bpf_program fp;
+    char filter_exp[50];
+    sprintf(filter_exp, "tcp and src port %d", target_port);
+
+    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1)
+    {
+        fprintf(stderr, "Erreur de compilation du filtre : %s\n", pcap_geterr(handle));
+        return;
+    }
+    if (pcap_setfilter(handle, &fp) == -1)
+    {
+        fprintf(stderr, "Erreur d'application du filtre : %s\n", pcap_geterr(handle));
         return;
     }
 
