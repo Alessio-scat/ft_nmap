@@ -1,29 +1,48 @@
 #include "ft_nmap.h"
 
 int create_raw_socket();
-void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest);
+void build_ip_header(void *iph, struct sockaddr_in *dest);
 void build_tcp_header(struct tcphdr *tcph, int target_port);
-void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest);
+void send_packet(int sock, char *packet, void *iph, struct sockaddr_in *dest);
 
 void print_tcphdr(struct tcphdr *tcph) {
     printf("=== En-tête TCP ===\n");
-    printf("Source Port: %d\n", ntohs(tcph->source));        // Port source
-    printf("Destination Port: %d\n", ntohs(tcph->dest));      // Port destination
-    printf("Sequence Number: %u\n", ntohl(tcph->seq));        // Numéro de séquence
-    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));  // Numéro d'accusé de réception
-    printf("Data Offset: %d\n", tcph->doff * 4);              // Longueur de l'en-tête TCP
+#ifdef __APPLE__
+    printf("Source Port: %d\n", ntohs(tcph->th_sport));        // Port source sur macOS
+    printf("Destination Port: %d\n", ntohs(tcph->th_dport));   // Port destination sur macOS
+    printf("Sequence Number: %u\n", ntohl(tcph->th_seq));      // Numéro de séquence sur macOS
+    printf("Acknowledgment Number: %u\n", ntohl(tcph->th_ack));  // Numéro d'accusé de réception sur macOS
+    printf("Data Offset: %d\n", tcph->th_off * 4);             // Longueur de l'en-tête TCP sur macOS
     printf("Flags: \n");
-    printf("   SYN: %d\n", tcph->syn);                        // Flag SYN
-    printf("   ACK: %d\n", tcph->ack);                        // Flag ACK
-    printf("   RST: %d\n", tcph->rst);                        // Flag RST
-    printf("   FIN: %d\n", tcph->fin);                        // Flag FIN
-    printf("   PSH: %d\n", tcph->psh);                        // Flag PSH
-    printf("   URG: %d\n", tcph->urg);                        // Flag URG
-    printf("Window Size: %d\n", ntohs(tcph->window));         // Taille de la fenêtre
-    printf("Checksum: 0x%x\n", ntohs(tcph->check));           // Checksum TCP
-    printf("Urgent Pointer: %d\n", tcph->urg_ptr);            // Pointeur urgent
+    printf("   SYN: %d\n", (tcph->th_flags & TH_SYN) != 0);    // Flag SYN sur macOS
+    printf("   ACK: %d\n", (tcph->th_flags & TH_ACK) != 0);    // Flag ACK sur macOS
+    printf("   RST: %d\n", (tcph->th_flags & TH_RST) != 0);    // Flag RST sur macOS
+    printf("   FIN: %d\n", (tcph->th_flags & TH_FIN) != 0);    // Flag FIN sur macOS
+    printf("   PSH: %d\n", (tcph->th_flags & TH_PUSH) != 0);   // Flag PSH sur macOS
+    printf("   URG: %d\n", (tcph->th_flags & TH_URG) != 0);    // Flag URG sur macOS
+    printf("Window Size: %d\n", ntohs(tcph->th_win));          // Taille de la fenêtre sur macOS
+    printf("Checksum: 0x%x\n", ntohs(tcph->th_sum));           // Checksum TCP sur macOS
+    printf("Urgent Pointer: %d\n", tcph->th_urp);              // Pointeur urgent sur macOS
+#else
+    printf("Source Port: %d\n", ntohs(tcph->source));          // Port source sur Linux
+    printf("Destination Port: %d\n", ntohs(tcph->dest));       // Port destination sur Linux
+    printf("Sequence Number: %u\n", ntohl(tcph->seq));         // Numéro de séquence sur Linux
+    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq)); // Numéro d'accusé de réception sur Linux
+    printf("Data Offset: %d\n", tcph->doff * 4);               // Longueur de l'en-tête TCP sur Linux
+    printf("Flags: \n");
+    printf("   SYN: %d\n", tcph->syn);                         // Flag SYN sur Linux
+    printf("   ACK: %d\n", tcph->ack);                         // Flag ACK sur Linux
+    printf("   RST: %d\n", tcph->rst);                         // Flag RST sur Linux
+    printf("   FIN: %d\n", tcph->fin);                         // Flag FIN sur Linux
+    printf("   PSH: %d\n", tcph->psh);                         // Flag PSH sur Linux
+    printf("   URG: %d\n", tcph->urg);                         // Flag URG sur Linux
+    printf("Window Size: %d\n", ntohs(tcph->window));          // Taille de la fenêtre sur Linux
+    printf("Checksum: 0x%x\n", ntohs(tcph->check));            // Checksum TCP sur Linux
+    printf("Urgent Pointer: %d\n", tcph->urg_ptr);             // Pointeur urgent sur Linux
+#endif
     printf("===================\n");
 }
+
 
 int create_raw_socket()
 {
@@ -36,48 +55,81 @@ int create_raw_socket()
     return sockfd;
 }
 
-// Fonction pour construire l'en-tête IP
-void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest) {
-    iph->ihl = 5;
-    iph->version = 4;
-    iph->tos = 0;
-    iph->tot_len = sizeof(struct iphdr) + sizeof(struct tcphdr);
-    iph->id = htonl(54321); // ID unique
-    iph->frag_off = 0;
-    iph->ttl = 255;
-    iph->protocol = IPPROTO_TCP;
-    iph->check = 0; // Checksum sera calculé après
-    iph->saddr = inet_addr(get_local_ip()); // IP source (peut être modifiée)
-    iph->daddr = dest->sin_addr.s_addr;
-
-    // Calcul du checksum pour l'en-tête IP
-    iph->check = checksum((unsigned short *)iph, sizeof(struct iphdr));
+void build_ip_header(void *iph, struct sockaddr_in *dest) {
+#ifdef __APPLE__
+    struct ip *ip_hdr = (struct ip *)iph;
+    ip_hdr->ip_hl = 5;
+    ip_hdr->ip_v = 4; 
+    ip_hdr->ip_tos = 0;
+    ip_hdr->ip_len = htons(sizeof(struct ip) + sizeof(struct tcphdr)); // Total length
+    ip_hdr->ip_id = htons(54321); // Utilisation de htons pour éviter la conversion 32-bit
+    ip_hdr->ip_off = 0; 
+    ip_hdr->ip_ttl = 255;
+    ip_hdr->ip_p = IPPROTO_TCP;
+    ip_hdr->ip_sum = 0;
+    printf("ici\n");
+    ip_hdr->ip_src.s_addr = inet_addr(get_local_ip());
+    printf("tac\n");
+    ip_hdr->ip_dst = dest->sin_addr;
+#else
+    struct iphdr *ip_hdr = (struct iphdr *)iph;
+    ip_hdr->ihl = 5;
+    ip_hdr->version = 4;
+    ip_hdr->tos = 0;
+    ip_hdr->tot_len = sizeof(struct iphdr) + sizeof(struct tcphdr);
+    ip_hdr->id = htonl(54321);
+    ip_hdr->frag_off = 0;
+    ip_hdr->ttl = 255;
+    ip_hdr->protocol = IPPROTO_TCP;
+    ip_hdr->check = 0;
+    ip_hdr->saddr = inet_addr(get_local_ip()); 
+    ip_hdr->daddr = dest->sin_addr.s_addr;
+#endif
 }
 
-// Fonction pour construire l'en-tête TCP
+
+
 void build_tcp_header(struct tcphdr *tcph, int target_port) {
-    tcph->source = htons(rand() % 65535 + 1024);  // Port source (aléatoire)
-    tcph->dest = htons(target_port);  // Port cible
+#ifdef __APPLE__
+    tcph->th_sport = htons(rand() % 65535 + 1024);
+    tcph->th_dport = htons(target_port);
+    tcph->th_seq = 0;
+    tcph->th_ack = 0;
+    tcph->th_off = 5;
+    tcph->th_flags = TH_SYN;
+    tcph->th_win = htons(5840); 
+    tcph->th_sum = 0;
+    tcph->th_urp = 0;
+#else
+    tcph->source = htons(rand() % 65535 + 1024);
+    tcph->dest = htons(target_port);
     tcph->seq = 0;
     tcph->ack_seq = 0;
-    tcph->doff = 5;  // Longueur de l'en-tête TCP
-    tcph->syn = 1;  // Flag SYN activé
-    tcph->window = htons(5840);  // Taille de la fenêtre
-    tcph->check = 0;  // Le checksum sera calculé plus tard
+    tcph->doff = 5;
+    tcph->syn = 1;
+    tcph->window = htons(5840);
+    tcph->check = 0; 
     tcph->urg_ptr = 0;
+#endif
 }
 
-void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest)
+
+void send_packet(int sock, char *packet, void *iph, struct sockaddr_in *dest)
 {
-    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));
+#ifdef __APPLE__
+    struct ip *ip_hdr = (struct ip *)iph;
+    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct ip)); 
+    struct iphdr *ip_hdr = (struct iphdr *)iph;
+    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));  // Utilisation de struct iphdr sur Linux
+#endif
 
     // Déclare et initialise le pseudo-header pour le calcul du checksum
     psh pshdr;
-    pshdr.source_address = iph->saddr; // Adresse IP source
-    pshdr.dest_address = iph->daddr; // Adresse IP destination
-    pshdr.placeholder = 0; // Champ de remplissage
-    pshdr.protocol = IPPROTO_TCP; // Protocole TCP
-    pshdr.tcp_length = htons(sizeof(struct tcphdr)); // Longueur de l'en-tête TCP
+    pshdr.source_address = ip_hdr->ip_src.s_addr;  // Source IP
+    pshdr.dest_address = ip_hdr->ip_dst.s_addr;    // Destination IP
+    pshdr.placeholder = 0;                         // Champ de remplissage
+    pshdr.protocol = IPPROTO_TCP;                  // Protocole TCP
+    pshdr.tcp_length = htons(sizeof(struct tcphdr));  // Longueur de l'en-tête TCP
 
     // Taille totale pour le calcul du checksum (pseudo-header + en-tête TCP)
     int psize = sizeof(psh) + sizeof(struct tcphdr);
@@ -88,76 +140,74 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     memcpy(pseudogram + sizeof(psh), tcph, sizeof(struct tcphdr));
 
     // Calculer le checksum TCP en utilisant le pseudo-header et l'en-tête TCP
-    tcph->check = checksum((unsigned short *)pseudogram, psize);
-    
+#ifdef __APPLE__
+    tcph->th_sum = checksum((unsigned short *)pseudogram, psize);  // Utilisation de th_sum sur macOS
+#else
+    tcph->check = checksum((unsigned short *)pseudogram, psize);   // Utilisation de check sur Linux
+#endif
+
     // Envoyer le paquet
-    if (sendto(sock, packet, iph->tot_len, 0, (struct sockaddr *)dest, sizeof(*dest)) < 0) {
+#ifdef __APPLE__
+    if (sendto(sock, packet, sizeof(struct ip) + sizeof(struct tcphdr), 0, (struct sockaddr *)dest, sizeof(*dest)) < 0) {
+#else
+    if (sendto(sock, packet, sizeof(struct iphdr) + sizeof(struct tcphdr), 0, (struct sockaddr *)dest, sizeof(*dest)) < 0) {
+#endif
         perror("Échec de l'envoi du paquet");
     } else {
-        printf("Paquet envoyé avec succès vers le port %d\n", ntohs(tcph->dest));
+#ifdef __APPLE__
+        printf("Paquet envoyé avec succès vers le port %d\n", ntohs(tcph->th_dport));  // Utilisation de th_dport sur macOS
+#else
+        printf("Paquet envoyé avec succès vers le port %d\n", ntohs(tcph->dest));  // Utilisation de dest sur Linux
+#endif
     }
 
-    // Libérer la mémoire alloué pour le pseudo-header
+    // Libérer la mémoire allouée pour le pseudo-header
     free(pseudogram);
 }
+
+
+
 
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     (void)pkthdr;  // Paramètre inutilisé
 
-    struct iphdr *iph = (struct iphdr *)(packet + 14);  // Saut de l'en-tête Ethernet (14 octets)
-    struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);  // En-tête TCP
+#ifdef __APPLE__
+    struct ip *ip_hdr = (struct ip *)(packet + 14);  // Saut de l'en-tête Ethernet (14 octets)
+    struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + ip_hdr->ip_hl * 4);  // En-tête TCP sur macOS
+#else
+    struct iphdr *ip_hdr = (struct iphdr *)(packet + 14);  // En-tête IP sur Linux
+    struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + ip_hdr->ihl * 4);  // En-tête TCP sur Linux
+#endif
 
     int target_port = *(int *)user_data;
-    printf("ici\n");
-    // printf("%d et %d\n", target_port, ntohs(tcph->source));
-    // Vérifie que c'est un paquet TCP et que le port source correspond au port scanné
-    if (iph->protocol == IPPROTO_TCP && ntohs(tcph->source) == target_port) {
-        printf("Réponse TCP reçue du port %d\n", ntohs(tcph->source));
 
-        // Vérifier les flags SYN-ACK ou RST
-        if (tcph->syn == 1 && tcph->ack == 1) {
-            printf("Port %d est ouvert (SYN-ACK reçu)\n", ntohs(tcph->source));
+#ifdef __APPLE__
+    if (ip_hdr->ip_p == IPPROTO_TCP && ntohs(tcph->th_sport) == target_port) {  // Vérification du port source sur macOS
+#else
+    if (ip_hdr->protocol == IPPROTO_TCP && ntohs(tcph->source) == target_port) {  // Vérification du port source sur Linux
+#endif
+        printf("Réponse TCP reçue du port %d\n", target_port);
+
+#ifdef __APPLE__
+        // Sous macOS, les flags TCP sont dans le champ `th_flags`
+        if ((tcph->th_flags & TH_SYN) && (tcph->th_flags & TH_ACK)) {  // Vérification des flags SYN et ACK
+#else
+        if (tcph->syn == 1 && tcph->ack == 1) {  // Vérification des flags SYN et ACK sur Linux
+#endif
+            printf("Port %d est ouvert (SYN-ACK reçu)\n", target_port);
             pcap_breakloop((pcap_t *)user_data);  // Sortir de la boucle de capture
         }
-        else if (tcph->rst == 1) {
-            printf("Port %d est fermé (RST reçu)\n", ntohs(tcph->source));
+#ifdef __APPLE__
+        else if (tcph->th_flags & TH_RST) {  // Vérification du flag RST sur macOS
+#else
+        else if (tcph->rst == 1) {  // Vérification du flag RST sur Linux
+#endif
+            printf("Port %d est fermé (RST reçu)\n", target_port);
             pcap_breakloop((pcap_t *)user_data);  // Sortir de la boucle de capture
         }
     }
 }
 
-// void receive_response(int sock, int target_port)
-// {
-//     char buffer[4096];
-//     struct sockaddr_in source;
-//     socklen_t source_len = sizeof(source);
-//     int received_bytes;
-//     while ((received_bytes = recvfrom(sock, buffer, sizeof(buffer), 0, (struct sockaddr *)&source, &source_len)) > 0) {
-//         struct iphdr *iph = (struct iphdr *)buffer; // Pointeur vers l'en-tête IP
-//         struct tcphdr *tcph = (struct tcphdr *)(buffer + iph->ihl * 4); // Pointeur vers l'en-tête TCP, après l'en-tête IP
-
-//         // Vérifier que le paquet reçu est une réponse TCP
-//         printf("%d et %d \n",ntohs(tcph->source), target_port);
-//         if (iph->protocol == IPPROTO_TCP && ntohs(tcph->source) == target_port) {
-//             printf("Réponse reçue de %s\n", inet_ntoa(source.sin_addr));
-//             // print_tcphdr(tcph);
-//             // Vérifier si c'est une réponse SYN-ACK (port ouvert)
-//             if (tcph->syn == 1 && tcph->ack == 1) {
-//                 printf("Port %d est ouvert (SYN-ACK reçu)\n", ntohs(tcph->source));
-//                 break;
-//             }
-//             // Vérifier si c'est une réponse RST (port fermé)
-//             else if (tcph->rst == 1) {
-//                 printf("Port %d est fermé (RST reçu)\n", ntohs(tcph->source));
-//                 break;
-//             }
-//         }
-//     }
-
-//     if (received_bytes < 0) {
-//         perror("Erreur lors de la réception du paquet");
-//     }
-// }
 
 void receive_response_pcap(char *interface, int target_port) {
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -202,35 +252,41 @@ int syn_scan(char *target_ip, int target_port)
 {
     printf("localhost %s\n", get_local_ip());
     int sock = create_raw_socket();
+    
     // Allocation mémoire pour le paquet
     char packet[4096];
     memset(packet, 0, 4096);
 
     // Pointeurs vers les en-têtes IP et TCP
-    struct iphdr *iph = (struct iphdr *)packet;
-    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));
+#ifdef __APPLE__
+    struct ip *iph = (struct ip *)packet;  // Utilisation de struct ip sur macOS
+    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct ip));  // Calcul correct de l'offset TCP sur macOS
+#else
+    struct iphdr *iph = (struct iphdr *)packet;  // Utilisation de struct iphdr sur Linux
+    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));  // Calcul correct de l'offset TCP sur Linux
+#endif
 
     // Configuration de la destination
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_port = htons(target_port);  // Port cible
-    dest.sin_addr.s_addr = inet_addr(target_ip); // IP cible
+    dest.sin_addr.s_addr = inet_addr(target_ip);  // IP cible
 
-    printf("%s\n", target_ip );
+    printf("%s\n", target_ip);
 
     // Construction des en-têtes IP et TCP
-    build_ip_header(iph, &dest);
-    build_tcp_header(tcph, target_port);
+    build_ip_header(iph, &dest);  // Fonction qui adapte selon l'OS
+    build_tcp_header(tcph, target_port);  // Fonction qui adapte selon l'OS
     // Envoi du paquet
     send_packet(sock, packet, iph, &dest);
-
     // Recevoir et analyser les réponses
     // receive_response(sock, target_port);
 
     // Utiliser libpcap pour capturer la réponse
-    receive_response_pcap("eth0", target_port);
-
+    receive_response_pcap("en0", target_port);
+    printf("33\n");
     // Fermeture du socket
     close(sock);
     return 1;
 }
+

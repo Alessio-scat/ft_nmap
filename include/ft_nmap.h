@@ -15,6 +15,8 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <ifaddrs.h>
+#include <net/if.h>
+
 
 #define MAX_PORT 1024
 
