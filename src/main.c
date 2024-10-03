@@ -25,6 +25,6 @@ int main(int ac, char **av)
         free(options.ip_list[j]);
     free(options.ip_list);
     int i = syn_scan(options.ip_address, options.portsTab[0]);
-    printf("%d\n", i);
+    (void)i;
     return 0;
 }
