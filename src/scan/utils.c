@@ -1,5 +1,11 @@
 #include "ft_nmap.h"
 
+// Fonction pour afficher le résultat formaté
+void print_scan_result(int port, const char *service, const char *state) {
+    printf("        %-7d%-15s%-10s\n", port, service, state);
+}
+
+
 // Fonction pour calculer le checksum
 unsigned short checksum(void *b, int len) {
     unsigned short *buf = b;
@@ -41,4 +47,35 @@ char *get_local_ip() {
 
     freeifaddrs(ifap);
     return addr;
+}
+
+char *get_local_interface() {
+    pcap_if_t *alldevs, *dev;
+    char errbuf[PCAP_ERRBUF_SIZE];
+    char *local_interface = NULL;
+
+    // Récupère toutes les interfaces réseau disponibles
+    if (pcap_findalldevs(&alldevs, errbuf) == -1) {
+        fprintf(stderr, "Erreur lors de la récupération des interfaces : %s\n", errbuf);
+        return NULL;
+    }
+
+    // Parcours la liste des interfaces pour trouver une interface valide
+    for (dev = alldevs; dev != NULL; dev = dev->next) {
+        if (dev->flags & PCAP_IF_UP) { // Vérifie si l'interface est active (up)
+            // Copie le nom de l'interface dans local_interface
+            local_interface = strdup(dev->name);
+            break;
+        }
+    }
+
+    // Libère la liste des interfaces
+    pcap_freealldevs(alldevs);
+
+    // Si aucune interface n'a été trouvée
+    if (local_interface == NULL) {
+        fprintf(stderr, "Aucune interface réseau active trouvée\n");
+    }
+
+    return local_interface;
 }

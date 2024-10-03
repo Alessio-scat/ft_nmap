@@ -16,8 +16,12 @@
 #include <pthread.h>
 #include <ifaddrs.h>
 #include <net/if.h>
+#include <signal.h>
 
 #define MAX_PORT 1024
+#define PORT_OPEN 1
+#define PORT_CLOSED 0
+#define PORT_FILTERED -1
 
 typedef struct {
     char *ip_address;
@@ -30,6 +34,8 @@ typedef struct {
     char *file;
     char **ip_list;
     int ip_count;
+    char *local_ip;
+    char *local_interface;
     
 } ScanOptions;
 
@@ -42,9 +48,11 @@ typedef struct {
 } psh;
 
 typedef struct {
-    pcap_t *pcap_handle;
-    int target_port;
+    pcap_t *pcap_handle;  // Handle de capture pcap
+    int target_port;      // Port cible à analyser
+    int port_status;      // Statut du port (ouvert, fermé, filtré)
 } pcap_data_t;
+
 
 
 /*
@@ -53,10 +61,12 @@ typedef struct {
 void parse_arguments(int ac, char **av, ScanOptions *options);
 
 //scan SYN
-int syn_scan(char *target_ip, int target_port);
+void syn_scan_all_ports(ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);
 char *get_local_ip();
+char *get_local_interface();
+void print_scan_result(int port, const char *service, const char *state);
 
 #endif
