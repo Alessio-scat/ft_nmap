@@ -161,6 +161,7 @@ void send_packet(int sock, char *packet, void *iph, struct sockaddr_in *dest)
         printf("Paquet envoyé avec succès vers le port %d\n", ntohs(tcph->dest));  // Utilisation de dest sur Linux
 #endif
     }
+    usleep(1000);
 
     // Libérer la mémoire allouée pour le pseudo-header
     free(pseudogram);
@@ -172,48 +173,58 @@ void send_packet(int sock, char *packet, void *iph, struct sockaddr_in *dest)
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     (void)pkthdr;  // Paramètre inutilisé
 
-#ifdef __APPLE__
-    struct ip *ip_hdr = (struct ip *)(packet + 14);  // Saut de l'en-tête Ethernet (14 octets)
-    struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + ip_hdr->ip_hl * 4);  // En-tête TCP sur macOS
-#else
-    struct iphdr *ip_hdr = (struct iphdr *)(packet + 14);  // En-tête IP sur Linux
-    struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + ip_hdr->ihl * 4);  // En-tête TCP sur Linux
-#endif
-
-    int target_port = *(int *)user_data;
+    pcap_data_t *data = (pcap_data_t *)user_data;  // Cast de user_data
+    pcap_t *handle = data->pcap_handle;
+    int target_port = data->target_port;
 
 #ifdef __APPLE__
-    if (ip_hdr->ip_p == IPPROTO_TCP && ntohs(tcph->th_sport) == target_port) {  // Vérification du port source sur macOS
+    // Sur macOS, on utilise struct ip et struct tcphdr
+    struct ip *iph = (struct ip *)(packet + 14);  // Saut de l'en-tête Ethernet (14 octets)
+    struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ip_hl * 4);  // En-tête TCP sur macOS
 #else
-    if (ip_hdr->protocol == IPPROTO_TCP && ntohs(tcph->source) == target_port) {  // Vérification du port source sur Linux
+    // Sur Linux, on utilise struct iphdr et struct tcphdr
+    struct iphdr *iph = (struct iphdr *)(packet + 14);  // Saut de l'en-tête Ethernet (14 octets)
+    struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);  // En-tête TCP sur Linux
 #endif
-        printf("Réponse TCP reçue du port %d\n", target_port);
 
 #ifdef __APPLE__
-        // Sous macOS, les flags TCP sont dans le champ `th_flags`
-        if ((tcph->th_flags & TH_SYN) && (tcph->th_flags & TH_ACK)) {  // Vérification des flags SYN et ACK
-#else
-        if (tcph->syn == 1 && tcph->ack == 1) {  // Vérification des flags SYN et ACK sur Linux
-#endif
-            printf("Port %d est ouvert (SYN-ACK reçu)\n", target_port);
-            pcap_breakloop((pcap_t *)user_data);  // Sortir de la boucle de capture
+    // Vérifie que c'est un paquet TCP et que le port source correspond au port scanné (sur macOS)
+    if (iph->ip_p == IPPROTO_TCP && ntohs(tcph->th_sport) == target_port) {
+        printf("Réponse TCP reçue du port %d\n", ntohs(tcph->th_sport));
+
+        // Vérifier les flags SYN-ACK ou RST sur macOS
+        if ((tcph->th_flags & TH_SYN) && (tcph->th_flags & TH_ACK)) {
+            printf("Port %d est ouvert (SYN-ACK reçu)\n", ntohs(tcph->th_sport));
+            pcap_breakloop(handle);  // Sortir de la boucle de capture
         }
-#ifdef __APPLE__
-        else if (tcph->th_flags & TH_RST) {  // Vérification du flag RST sur macOS
-#else
-        else if (tcph->rst == 1) {  // Vérification du flag RST sur Linux
-#endif
-            printf("Port %d est fermé (RST reçu)\n", target_port);
-            pcap_breakloop((pcap_t *)user_data);  // Sortir de la boucle de capture
+        else if (tcph->th_flags & TH_RST) {
+            printf("Port %d est fermé (RST reçu)\n", ntohs(tcph->th_sport));
+            pcap_breakloop(handle);  // Sortir de la boucle de capture
         }
     }
+#else
+    // Vérifie que c'est un paquet TCP et que le port source correspond au port scanné (sur Linux)
+    if (iph->protocol == IPPROTO_TCP && ntohs(tcph->source) == target_port) {
+        printf("Réponse TCP reçue du port %d\n", ntohs(tcph->source));
+
+        // Vérifier les flags SYN-ACK ou RST sur Linux
+        if (tcph->syn == 1 && tcph->ack == 1) {
+            printf("Port %d est ouvert (SYN-ACK reçu)\n", ntohs(tcph->source));
+            pcap_breakloop(handle);  // Sortir de la boucle de capture
+        }
+        else if (tcph->rst == 1) {
+            printf("Port %d est fermé (RST reçu)\n", ntohs(tcph->source));
+            pcap_breakloop(handle);  // Sortir de la boucle de capture
+        }
+    }
+#endif
 }
+
 
 
 void receive_response_pcap(char *interface, int target_port) {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *handle;
-    // bpf_u_int32 net = 0;  // Initialiser à 0
 
     // Ouvrir l'interface pour capturer les paquets
     handle = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf);
@@ -221,17 +232,21 @@ void receive_response_pcap(char *interface, int target_port) {
         fprintf(stderr, "Impossible d'ouvrir l'interface : %s\n", errbuf);
         return;
     }
+
+    // Préparer la structure de données pour passer les informations nécessaires
+    pcap_data_t pcap_data;
+    pcap_data.pcap_handle = handle;
+    pcap_data.target_port = target_port;
+
     struct bpf_program fp;
     char filter_exp[50];
     sprintf(filter_exp, "tcp and src port %d", target_port);
 
-    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1)
-    {
+    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
         fprintf(stderr, "Erreur de compilation du filtre : %s\n", pcap_geterr(handle));
         return;
     }
-    if (pcap_setfilter(handle, &fp) == -1)
-    {
+    if (pcap_setfilter(handle, &fp) == -1) {
         fprintf(stderr, "Erreur d'application du filtre : %s\n", pcap_geterr(handle));
         return;
     }
@@ -239,21 +254,23 @@ void receive_response_pcap(char *interface, int target_port) {
     // Supprimer le filtre pour capturer tous les paquets TCP
     printf("Capturer tous les paquets sur l'interface %s\n", interface);
 
-    // Commencer à capturer les paquets
-    pcap_loop(handle, 10, packet_handler, (u_char *)&target_port);
+    // Commencer à capturer les paquets, passer pcap_data comme user_data
+    pcap_loop(handle, 10, packet_handler, (u_char *)&pcap_data);
 
     // Fermer le handle pcap
     pcap_close(handle);
 }
 
-
-
-
 int syn_scan(char *target_ip, int target_port)
 {
     printf("localhost %s\n", get_local_ip());
     int sock = create_raw_socket();
-    
+    int optval = 1;
+    if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0)
+    {
+        perror("Error setting IP_HDRINCL");
+        exit(1);
+    }
     // Allocation mémoire pour le paquet
     char packet[4096];
     memset(packet, 0, 4096);

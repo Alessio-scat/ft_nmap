@@ -17,7 +17,6 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 
-
 #define MAX_PORT 1024
 
 typedef struct {
@@ -41,6 +40,12 @@ typedef struct {
     u_int8_t protocol;
     u_int16_t tcp_length;
 } psh;
+
+typedef struct {
+    pcap_t *pcap_handle;
+    int target_port;
+} pcap_data_t;
+
 
 /*
     parsing.c
