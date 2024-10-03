@@ -118,7 +118,8 @@ void send_packet(int sock, char *packet, void *iph, struct sockaddr_in *dest)
 {
 #ifdef __APPLE__
     struct ip *ip_hdr = (struct ip *)iph;
-    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct ip)); 
+    struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct ip));
+#else
     struct iphdr *ip_hdr = (struct iphdr *)iph;
     struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));  // Utilisation de struct iphdr sur Linux
 #endif
