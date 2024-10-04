@@ -25,10 +25,12 @@
 
 typedef struct {
     char *ip_address;
+    char *ip_host;
     char *ports;
     int speedup;
     char *scan_type;
     int portsTab[MAX_PORT];
+    int flag_ports;
     int portsTabSize;   
     //file
     char *file;
@@ -36,6 +38,7 @@ typedef struct {
     int ip_count;
     char *local_ip;
     char *local_interface;
+    char ***status;
     
 } ScanOptions;
 
@@ -68,5 +71,8 @@ unsigned short checksum(void *b, int len);
 char *get_local_ip();
 char *get_local_interface();
 void print_scan_result(int port, const char *service, const char *state);
+
+void initialize_status(ScanOptions *options, int num_techniques, int num_ports);
+void print_ports_excluding_state(ScanOptions *options, const char *excluded_state);
 
 #endif

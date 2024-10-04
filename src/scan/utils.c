@@ -79,3 +79,69 @@ char *get_local_interface() {
 
     return local_interface;
 }
+
+void initialize_status(ScanOptions *options, int num_techniques, int num_ports) {
+    // Allouer de la mémoire pour chaque technique (première dimension)
+    options->status = malloc(num_techniques * sizeof(char **));
+    if (options->status == NULL) {
+        perror("Failed to allocate memory for techniques");
+        exit(1);
+    }
+
+    // Pour chaque technique, allouer la mémoire pour les statuts des ports (deuxième dimension)
+    for (int i = 0; i < num_techniques; i++)
+    {
+        options->status[i] = malloc(num_ports * sizeof(char *));
+        if (options->status[i] == NULL)
+        {
+            perror("Failed to allocate memory for ports");
+            exit(1);
+        }
+
+        for (int j = 0; j < num_ports; j++)
+        {
+            options->status[i][j] = malloc(10 * sizeof(char)); // Taille maximale pour chaque statut
+            if (options->status[i][j] == NULL)
+            {
+                perror("Failed to allocate memory for status entry");
+                exit(1);
+            }
+            strcpy(options->status[i][j], "FILTERED");
+        }
+    }
+
+    // Mettre à jour la taille des ports
+    // options->portsTabSize = num_ports;
+}
+
+void print_ports_excluding_state(ScanOptions *options, const char *excluded_state) {
+    printf("Results for %s(%s)\n", options->ip_host, options->ip_address);
+    int excluded_count = 0;
+
+    // Comptage des ports dans l'état spécifié (par exemple, "CLOSED")
+    for (int i = 0; i < options->portsTabSize; i++) {
+        for (int technique = 0; technique < 1; technique++) {  // Si tu as plusieurs techniques, il faut boucler dessus
+            if (strcmp(options->status[technique][i], excluded_state) == 0) {
+                excluded_count++;
+            }
+        }
+    }
+
+    // Affichage du nombre de ports dans l'état exclu
+    printf("%d ports on state %s\n", excluded_count, excluded_state);
+
+    // Affichage des détails des ports qui ne sont pas dans cet état exclu
+    printf("    PORT    SERVICE         STATE\n");
+    for (int i = 0; i < options->portsTabSize; i++) {
+        for (int technique = 0; technique < 1; technique++) {
+            if (strcmp(options->status[technique][options->portsTab[i] - 1], excluded_state) != 0) {  // On affiche les ports qui ne sont pas dans l'état exclu
+                // Obtenir le nom du service pour le port
+                struct servent *service_entry = getservbyport(htons(options->portsTab[i]), "tcp");
+                const char *service_name = (service_entry != NULL) ? service_entry->s_name : "unknown";
+
+                // Afficher les détails du port
+                printf("    %5d    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
+            }
+        }
+    }
+}
