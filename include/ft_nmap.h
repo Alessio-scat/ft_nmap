@@ -14,25 +14,59 @@
 #include <regex.h>
 #include <ctype.h>
 #include <pthread.h>
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <signal.h>
 
+#define MAX_PORT 1024
+#define PORT_OPEN 1
+#define PORT_CLOSED 0
+#define PORT_FILTERED -1
 
 typedef struct {
     char *ip_address;
     char *ports;
     int speedup;
     char *scan_type;
-    
+    int portsTab[MAX_PORT];
+    int portsTabSize;   
     //file
     char *file;
     char **ip_list;
     int ip_count;
+    char *local_ip;
+    char *local_interface;
     
 } ScanOptions;
+
+typedef struct {
+    u_int32_t source_address;
+    u_int32_t dest_address;
+    u_int8_t placeholder;
+    u_int8_t protocol;
+    u_int16_t tcp_length;
+} psh;
+
+typedef struct {
+    pcap_t *pcap_handle;  // Handle de capture pcap
+    int target_port;      // Port cible à analyser
+    int port_status;      // Statut du port (ouvert, fermé, filtré)
+} pcap_data_t;
+
+
 
 /*
     parsing.c
 */
 void parse_arguments(int ac, char **av, ScanOptions *options);
 
+//scan SYN
+void syn_scan_all_ports(ScanOptions *options);
+
+//utils.c
+unsigned short checksum(void *b, int len);
+char *get_local_ip();
+char *get_local_interface();
+void print_scan_result(int port, const char *service, const char *state);
 
 #endif

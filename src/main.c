@@ -2,10 +2,11 @@
 
 int main(int ac, char **av)
 {
-    ScanOptions options = {NULL, NULL, 0, NULL, NULL, NULL, 0};
+    ScanOptions options = {NULL, NULL, 0, NULL, {0}, 0, NULL, NULL, 0, NULL, NULL};
 
     parse_arguments(ac, av, &options);
-
+    options.local_ip = get_local_ip();
+    options.local_interface = get_local_interface();
     printf("-----------COMMAND--------------\n");
     printf("IP Address: %s\n", options.ip_address);
     printf("Ports: %s\n", options.ports);
@@ -16,6 +17,8 @@ int main(int ac, char **av)
     printf("Scan Type: %s\n", options.scan_type);
     printf("--------------------------------\n");
 
+    syn_scan_all_ports(&options);
+    
 
     for (int j = 0; j < options.ip_count; j++)
         free(options.ip_list[j]);

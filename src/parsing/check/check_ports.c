@@ -5,7 +5,18 @@
     sscanf: Parses formatted data from a string into variables.
 */
 
-int validate_ports(const char *ports) {
+// Fonction pour vérifier si un port est déjà dans portsTab
+int is_port_in_list(int *ports, int num_ports, int port) {
+    for (int i = 0; i < num_ports; i++) {
+        if (ports[i] == port) {
+            return 1; // Le port est déjà dans la liste
+        }
+    }
+    return 0; // Le port n'est pas dans la liste
+}
+
+// Fonction pour valider, parser et stocker les ports
+int validate_and_parse_ports(const char *ports, ScanOptions *options) {
     regex_t regex;
     int ret = regcomp(&regex, "^([0-9]+(-[0-9]+)?)(,[0-9]+(-[0-9]+)?)*$", REG_EXTENDED);
     if (ret) {
@@ -16,51 +27,75 @@ int validate_ports(const char *ports) {
     ret = regexec(&regex, ports, 0, NULL, 0);
     regfree(&regex);
 
-    if (ret != 0)
-        return 0;
+    if (ret != 0) {
+        return 0; // Format des ports non valide
+    }
 
     // Split and validate each port/range
     char *ports_copy = strdup(ports);
     char *token = strtok(ports_copy, ",");
+    options->portsTabSize = 0; // Réinitialise la taille des ports
+
     while (token != NULL) {
         int start, end;
-        // Check for leading zeros which are not allowed
+
+        // Vérifie pour les zéros en tête
         if (token[0] == '0' && strlen(token) > 1) {
             free(ports_copy);
             return 0;
         }
-        if (strchr(token, '-') != NULL) { // Handle ranges like "5-15"
+
+        if (strchr(token, '-') != NULL) { // Gérer les plages comme "5-15"
             sscanf(token, "%d-%d", &start, &end);
-            // Check if values are within valid range and correctly ordered
-            if (start < 1 || end > 1024 || start > end) {
+            if (start < 1 || end > MAX_PORT || start > end) {
                 free(ports_copy);
                 return 0;
             }
-        } else { // Handle individual ports like "80"
+            for (int i = start; i <= end; i++) {
+                if (!is_port_in_list(options->portsTab, options->portsTabSize, i)) {
+                    options->portsTab[options->portsTabSize++] = i;
+                }
+            }
+        } else { // Gérer les ports individuels comme "80"
             start = atoi(token);
-            // Check if the port is within the valid range
-            if (start < 1 || start > 1024) {
+            if (start < 1 || start > MAX_PORT) {
                 free(ports_copy);
                 return 0;
+            }
+            if (!is_port_in_list(options->portsTab, options->portsTabSize, start)) {
+                options->portsTab[options->portsTabSize++] = start;
             }
         }
-        token = strtok(NULL, ","); // continue the loop because strtok put \0 end 
+        token = strtok(NULL, ",");
     }
+
     free(ports_copy);
-    return 1; // Ports are valid
+    return 1; // Ports valides et stockés dans portsTab
+}
+
+int comp (const void * elem1, const void * elem2) 
+{
+    int f = *((int*)elem1);
+    int s = *((int*)elem2);
+    if (f > s) return  1;
+    if (f < s) return -1;
+    return 0;
 }
 
 // Handle the --ports option
 void handle_ports_option(int *i, int ac, char **av, ScanOptions *options) {
     if (*i + 1 < ac) {
-        if (validate_ports(av[*i + 1])) {
+        if (validate_and_parse_ports(av[*i + 1], options)) {
             options->ports = av[*i + 1];
+            qsort(options->portsTab, options->portsTabSize, sizeof(int), comp);
             (*i)++;
         } else {
-            fprintf(stderr, "Error: Invalid port range or list: %s\n", av[*i + 1]); exit(1);
+            fprintf(stderr, "Error: Invalid port range or list: %s\n", av[*i + 1]);
+            exit(1);
         }
     } else {
-        fprintf(stderr, "Error: --ports option requires a port range or list.\n"); exit(1);
+        fprintf(stderr, "Error: --ports option requires a port range or list.\n");
+        exit(1);
     }
 }
 
