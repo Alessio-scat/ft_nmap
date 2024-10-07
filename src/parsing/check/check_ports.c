@@ -84,6 +84,7 @@ int comp (const void * elem1, const void * elem2)
 
 // Handle the --ports option
 void handle_ports_option(int *i, int ac, char **av, ScanOptions *options) {
+    options->flag_ports = 1;
     if (*i + 1 < ac) {
         if (validate_and_parse_ports(av[*i + 1], options)) {
             options->ports = av[*i + 1];
