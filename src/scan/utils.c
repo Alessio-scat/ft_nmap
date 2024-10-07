@@ -114,34 +114,3 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
     // options->portsTabSize = num_ports;
 }
 
-void print_ports_excluding_state(ScanOptions *options, const char *excluded_state) {
-    printf("Results for %s(%s)\n", options->ip_host, options->ip_address);
-    int excluded_count = 0;
-
-    // Comptage des ports dans l'état spécifié (par exemple, "CLOSED")
-    for (int i = 0; i < options->portsTabSize; i++) {
-        for (int technique = 0; technique < 1; technique++) {  // Si tu as plusieurs techniques, il faut boucler dessus
-            if (strcmp(options->status[technique][i], excluded_state) == 0) {
-                excluded_count++;
-            }
-        }
-    }
-
-    // Affichage du nombre de ports dans l'état exclu
-    printf("%d ports on state %s\n", excluded_count, excluded_state);
-
-    // Affichage des détails des ports qui ne sont pas dans cet état exclu
-    printf("    PORT    SERVICE         STATE\n");
-    for (int i = 0; i < options->portsTabSize; i++) {
-        for (int technique = 0; technique < 1; technique++) {
-            if (strcmp(options->status[technique][options->portsTab[i] - 1], excluded_state) != 0 || options->flag_ports == 1) {  // On affiche les ports qui ne sont pas dans l'état exclu
-                // Obtenir le nom du service pour le port
-                struct servent *service_entry = getservbyport(htons(options->portsTab[i]), "tcp");
-                const char *service_name = (service_entry != NULL) ? service_entry->s_name : "unknown";
-
-                // Afficher les détails du port
-                printf("    %5d    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
-            }
-        }
-    }
-}

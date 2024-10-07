@@ -147,7 +147,7 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
             strcpy(options->status[technique][port - 1], "CLOSED");
         }
     }
-
+    alarm(5);
 
     // Tu peux aussi traiter les paquets ICMP ou autres protocoles ici si besoin
 
@@ -156,7 +156,6 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
 
 
 void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options) {
-    printf("Sending packets...\n");
 
     for (int j = 0; j < options->portsTabSize; j++) {
         int target_port = options->portsTab[j];
@@ -215,8 +214,6 @@ pcap_t *init_pcap(const char *interface) {
 
 void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     global_handle = handle;
-
-    printf("Waiting for responses...\n");
 
     // Définir un timeout (exemple: 15 secondes)
     signal(SIGALRM, timeout_handler);
