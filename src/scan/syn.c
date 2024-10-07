@@ -1,5 +1,6 @@
 #include "ft_nmap.h"
 pcap_t *global_handle = NULL;
+bool stop_pcap = false;
 
 int create_raw_socket();
 void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
@@ -8,6 +9,7 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
 
 void timeout_handler(int signum) {
     if (signum == SIGALRM) {
+        stop_pcap = true;
         // printf("Timeout atteint. Le port est probablement filtré.\n");
         if (global_handle) {
             pcap_breakloop(global_handle);  // Arrêter la capture
@@ -108,34 +110,8 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     if (sendto(sock, packet, iph->tot_len, 0, (struct sockaddr *)dest, sizeof(*dest)) < 0) {
         perror("Échec de l'envoi du paquet");
     }
-
-    usleep(1000);
     free(pseudogram);
 }
-
-// Fonction de capture des paquets pour vérifier la réponse SYN-ACK ou RST
-// void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-//     (void)pkthdr;
-
-//     pcap_data_t *data = (pcap_data_t *)user_data;
-//     struct iphdr *iph = (struct iphdr *)(packet + 14); // Sauter l'en-tête Ethernet (14 octets)
-//     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4); // Sauter l'en-tête IP
-
-//     int target_port = data->target_port;
-
-//     if (iph->protocol == IPPROTO_TCP && ntohs(tcph->source) == target_port) {
-//         if (tcph->syn == 1 && tcph->ack == 1) {
-//             // Port ouvert
-//             // printf("Port %d est ouvert (SYN-ACK reçu)\n", target_port);
-//             data->port_status = PORT_OPEN;
-//         } else if (tcph->rst == 1) {
-//             // Port fermé
-//             // printf("Port %d est fermé (RST reçu)\n", target_port);
-//             data->port_status = PORT_CLOSED;
-//         }
-//         pcap_breakloop(data->pcap_handle);  // Arrêter la capture une fois qu'une réponse est reçue
-//     }
-// }
 
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     (void)pkthdr;
@@ -158,24 +134,19 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
 
     // Identifier la technique utilisée (par exemple SYN scan)
     int technique = 0; // Si tu as plusieurs techniques, tu dois trouver un moyen de l'identifier ici
-    // printf("yo %d\n", port);
-    // if(port == 22){
-    //     print_tcphdr(tcph);
-    //     printf("prooo %d %d\n", iph->protocol, IPPROTO_TCP);
-    // }
+    
     // Vérifier si le paquet est un paquet TCP
     if (iph->protocol == IPPROTO_TCP) {
-        // printf("passssssssssssssssssssseeeeeeeeeeeeeeeeeeee\n");
         if (tcph->syn == 1 && tcph->ack == 1) {
-        // printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
             // Port ouvert
+            // printf("OPEN %d\n", port);
             strcpy(options->status[technique][port - 1], "OPEN");
         } else if (tcph->rst == 1) {
             // Port fermé
+            // printf("CLOSED %d\n", port);
             strcpy(options->status[technique][port - 1], "CLOSED");
         }
     }
-    // printf("yo1\n");
 
 
     // Tu peux aussi traiter les paquets ICMP ou autres protocoles ici si besoin
@@ -203,95 +174,63 @@ void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr
     }
 }
 
-void wait_for_responses(ScanOptions *options) {
+#include <pcap.h>
+
+pcap_t *init_pcap(const char *interface) {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_t *handle;
 
-    // Ouvrir l'interface pour capturer les paquets
-    handle = pcap_open_live(options->local_interface, BUFSIZ, 1, 1000, errbuf);
-    if (handle == NULL) {
-        fprintf(stderr, "Impossible d'ouvrir l'interface : %s\n", errbuf);
-        return;
+    if (getuid() != 0) {
+        fprintf(stderr, "You need to be root to run this program\n");
+        exit(1);
     }
 
-    // Mettre à jour le handle global pour le gestionnaire de timeout
+    handle = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf);
+    if (handle == NULL) {
+        fprintf(stderr, "Error opening interface: %s\n", errbuf);
+        exit(1);
+    }
+
+    // Appliquer un filtre BPF pour capturer uniquement les paquets TCP
+    struct bpf_program fp;
+    char filter_exp[] = "tcp";  // Filtre pour capturer les paquets TCP
+    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
+        fprintf(stderr, "Error compiling BPF filter: %s\n", pcap_geterr(handle));
+        pcap_close(handle);
+        exit(1);
+    }
+
+    if (pcap_setfilter(handle, &fp) == -1) {
+        fprintf(stderr, "Error setting BPF filter: %s\n", pcap_geterr(handle));
+        pcap_freecode(&fp);
+        pcap_close(handle);
+        exit(1);
+    }
+
+    pcap_freecode(&fp);  // Libérer la mémoire du filtre BPF
+    printf("Interface %s ouverte avec un filtre TCP.\n", interface);
+
+    return handle;
+}
+
+void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     global_handle = handle;
 
     printf("Waiting for responses...\n");
 
     // Définir un timeout (exemple: 15 secondes)
     signal(SIGALRM, timeout_handler);
-    alarm(15);
-    // Commencer la capture des paquets en boucle
-    pcap_dispatch(handle, 0, packet_handler, (u_char *)options);
+    alarm(15);  // Timeout de 15 secondes
+
+    // Capture des paquets en boucle jusqu'à expiration du délai
+    while (!stop_pcap) {
+        pcap_dispatch(handle, -1, packet_handler, (u_char *)options);
+    }
 
     // Réinitialiser et fermer pcap
     alarm(0);
-    pcap_close(handle);
     global_handle = NULL;
 }
-
-
-// void syn_scan_all_ports(ScanOptions *options) {
-//     printf("Results for %s\n", options->ip_address);
-//     printf("SYN     PORT    SERVICE         STATE\n");
-
-//     int sock = create_raw_socket();  // Créer le socket brut une seule fois
-//     int optval = 1;
-
-//     if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
-//         perror("Error setting IP_HDRINCL");
-//         exit(1);
-//     }
-
-//     char packet[4096];  // Réutilisation du même buffer pour chaque port
-//     struct iphdr *iph = (struct iphdr *)packet;
-//     struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));
-//     struct sockaddr_in dest;
-
-//     // Configurer l'adresse de destination (IP ne change pas pour chaque port)
-//     dest.sin_family = AF_INET;
-//     dest.sin_addr.s_addr = inet_addr(options->ip_address);
-
-//     // Construire l'en-tête IP une seule fois
-//     build_ip_header(iph, &dest, options);
-
-//     for (int j = 0; j < options->portsTabSize; j++) {
-//         int target_port = options->portsTab[j];
-        
-//         // Configurer le port de destination pour chaque port
-//         dest.sin_port = htons(target_port);
-
-//         // Construire l'en-tête TCP pour chaque port
-//         build_tcp_header(tcph, target_port);
-
-//         // Envoyer le paquet SYN
-//         send_packet(sock, packet, iph, &dest);
-
-//         // Recevoir la réponse pour ce port
-//         int port_status = receive_response_pcap(options, target_port);
-
-//         // Nom du service
-//         struct servent *service_entry = getservbyport(htons(target_port), "tcp");
-//         const char *service_name = (service_entry != NULL) ? service_entry->s_name : "unknown";
-
-//         // Afficher l'état du port selon le résultat
-//         if (port_status == PORT_OPEN) {
-//             print_scan_result(target_port, service_name, "OPEN");
-//         } else if (port_status == PORT_FILTERED) {
-//             print_scan_result(target_port, service_name, "FILTERED");
-//         } else if (options->flag_ports == 1) {
-//             print_scan_result(target_port, service_name, "CLOSED");
-//         }
-
-//         // Petit délai entre les scans
-//         usleep(1000);
-//     }
-
-//     // Fermer le socket brut après avoir terminé le scan
-//     close(sock);
-// }
-
 
 void syn_scan_all_ports(ScanOptions *options) {
     // printf("Results for %s\n", options->ip_address);
@@ -299,6 +238,7 @@ void syn_scan_all_ports(ScanOptions *options) {
 
     int sock = create_raw_socket();  // Créer le socket brut une seule fois
     int optval = 1;
+    pcap_t *handle = init_pcap(options->local_interface);
 
     if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
         perror("Error setting IP_HDRINCL");
@@ -319,9 +259,12 @@ void syn_scan_all_ports(ScanOptions *options) {
     // Envoyer tous les paquets SYN
     send_all_packets(sock, packet, iph, &dest, options);
 
+    // Attendre et capturer toutes les réponses en passant le handle pcap à la fonction
+    wait_for_responses(handle, options);
+
     // Fermer le socket brut après avoir terminé l'envoi
     close(sock);
 
-    // Attendre et capturer toutes les réponses
-    wait_for_responses(options);
+    // Fermer l'interface pcap après avoir capturé les réponses
+    pcap_close(handle);
 }

@@ -17,6 +17,7 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #define MAX_PORT 1024
 #define PORT_OPEN 1

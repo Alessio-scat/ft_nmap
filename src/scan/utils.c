@@ -134,7 +134,7 @@ void print_ports_excluding_state(ScanOptions *options, const char *excluded_stat
     printf("    PORT    SERVICE         STATE\n");
     for (int i = 0; i < options->portsTabSize; i++) {
         for (int technique = 0; technique < 1; technique++) {
-            if (strcmp(options->status[technique][options->portsTab[i] - 1], excluded_state) != 0) {  // On affiche les ports qui ne sont pas dans l'état exclu
+            if (strcmp(options->status[technique][options->portsTab[i] - 1], excluded_state) != 0 || options->flag_ports == 1) {  // On affiche les ports qui ne sont pas dans l'état exclu
                 // Obtenir le nom du service pour le port
                 struct servent *service_entry = getservbyport(htons(options->portsTab[i]), "tcp");
                 const char *service_name = (service_entry != NULL) ? service_entry->s_name : "unknown";
