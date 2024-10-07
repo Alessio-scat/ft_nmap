@@ -18,6 +18,7 @@
 #include <net/if.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <netinet/udp.h>
 
 #define MAX_PORT 1024
 #define PORT_OPEN 1
@@ -75,5 +76,10 @@ void print_scan_result(int port, const char *service, const char *state);
 
 void initialize_status(ScanOptions *options, int num_techniques, int num_ports);
 void print_ports_excluding_state(ScanOptions *options, const char *excluded_state);
+
+//build.c
+void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+void build_tcp_header(struct tcphdr *tcph, int target_port);
+void build_udp_header(struct udphdr *udph, int target_port);
 
 #endif
