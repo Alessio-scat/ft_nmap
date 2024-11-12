@@ -79,7 +79,7 @@ int main(int ac, char **av) {
     double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;
 
     // Afficher le temps écoulé
-    printf("\nNmap done: 1 IP address (1 host up) scanned in %.2f seconds\n", elapsed_time);
+    printf("\nNmap done: %d IP address (1 host up) scanned in %.2f seconds\n", options.ip_count+1, elapsed_time);
 
     return 0;
 }
