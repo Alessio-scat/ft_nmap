@@ -25,7 +25,7 @@
 #define PORT_FILTERED -1
 
 #define SYN 1
-#define SCAN_NULL 2 // Remplace NULL par SCAN_NULL
+#define SCAN_NULL 2
 #define FIN 3
 #define XMAS 4
 #define ACK 5
@@ -88,7 +88,7 @@ void print_scan_result(int port, const char *service, const char *state);
 void print_help();
 
 void initialize_status(ScanOptions *options, int num_techniques, int num_ports);
-void print_ports_excluding_state(ScanOptions *options, const char *excluded_state);
+void print_ports_excluding_state(ScanOptions *options, char *excluded_state);
 const char* get_scan_name(int scan_code);
 
 #endif

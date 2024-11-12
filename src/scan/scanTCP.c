@@ -72,15 +72,22 @@ void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options
     tcph->ack_seq = 0;
     tcph->doff = 5;  // Longueur de l'en-tête TCP
     if (options->scan_type == SYN){
-        tcph->syn = 1;   // Flag SYN activé
+        tcph->syn = 1;
     }
     else
         tcph->syn = 0;
+    if (options->scan_type == FIN) {
+        tcph->fin = 1; 
+    }
     tcph->fin = 0;   // Flag FIN désactivé
     tcph->rst = 0;   // Flag RST désactivé
     tcph->psh = 0;   // Flag PSH désactivé
     tcph->urg = 0;   // Flag URG désactivé
-    tcph->ack = 0;   // Flag ACK désactivé
+    if (options->scan_type == ACK) {
+        tcph->ack = 1; 
+    }
+    else
+        tcph->ack = 0;   // Flag ACK désactivé
     tcph->window = htons(5840);  // Taille de la fenêtre TCP
     tcph->check = 0;  // Le checksum sera calculé plus tard
     tcph->urg_ptr = 0;  // Pointeur urgent désactivé
@@ -153,6 +160,14 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
             } else {
                 // Absence de réponse interprétée comme port ouvert ou filtré
                 strcpy(options->status[options->currentScan][port - 1], "OPEN|FILTERED");
+            }
+        } else if (options->scan_type == ACK) {  // Scan ACK
+            if (tcph->rst == 1) {
+                // Port non filtré
+                strcpy(options->status[options->currentScan][port - 1], "UNFILTERED");
+            } else {
+                // Absence de réponse interprétée comme port filtré
+                strcpy(options->status[options->currentScan][port - 1], "FILTERED");
             }
         }
     }
