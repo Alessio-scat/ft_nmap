@@ -239,39 +239,48 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     global_handle = NULL;
 }
 
-void syn_scan_all_ports(ScanOptions *options) {
-    // printf("Results for %s\n", options->ip_address);
-    // printf("SYN     PORT    SERVICE         STATE\n");
-
-    int sock = create_raw_socket();  // Créer le socket brut une seule fois
+void tcp_scan_all_ports(ScanOptions *options) {
+    // Créer le socket brut une seule fois
+    int sock = create_raw_socket();
     int optval = 1;
-    pcap_t *handle = init_pcap(options->local_interface);
 
     if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
         perror("Error setting IP_HDRINCL");
         exit(1);
     }
 
-    char packet[4096];  // Réutilisation du même buffer pour chaque port
+    // Initialiser pcap une seule fois pour capturer les réponses
+    pcap_t *handle = init_pcap(options->local_interface);
+
+    // Préparer le paquet
+    char packet[4096];
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
-
-    // Configurer l'adresse de destination (IP ne change pas pour chaque port)
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
-    // Construire l'en-tête IP une seule fois
+    // Construire l'en-tête IP une fois (valide pour les deux scans)
     build_ip_header(iph, &dest, options);
 
-    // Envoyer tous les paquets SYN
-    send_all_packets(sock, packet, iph, &dest, options);
+    // Boucle interne pour exécuter chaque type de scan
+    for (int i = 0; i < options->scan_count; i++) {
+        stop_pcap = false;
+        options->currentScan = i;
+        options->scan_type = options->tabscan[i];
 
-    // Attendre et capturer toutes les réponses en passant le handle pcap à la fonction
-    wait_for_responses(handle, options);
+        // Envoyer les paquets pour le type de scan actuel
+        send_all_packets(sock, packet, iph, &dest, options);
 
-    // Fermer le socket brut après avoir terminé l'envoi
+        // Attendre les réponses pour le scan actuel
+        wait_for_responses(handle, options);
+
+        // Optionnel : ajouter un délai court entre les scans pour éviter les interférences
+        sleep(1);
+    }
+
+    // Fermer le socket brut et pcap après tous les scans
     close(sock);
-
-    // Fermer l'interface pcap après avoir capturé les réponses
     pcap_close(handle);
 }
+
+

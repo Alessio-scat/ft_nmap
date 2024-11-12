@@ -78,7 +78,7 @@ typedef struct {
 void parse_arguments(int ac, char **av, ScanOptions *options);
 
 //scan SYN
-void syn_scan_all_ports(ScanOptions *options);
+void tcp_scan_all_ports(ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);

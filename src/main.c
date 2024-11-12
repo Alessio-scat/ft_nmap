@@ -51,7 +51,6 @@ int main(int ac, char **av) {
     gettimeofday(&start, NULL);  // Temps de début
 
     // Parsing des arguments et configuration
-    printf("ici\n");
     parse_arguments(ac, av, &options);
     if (options.flag_ports == 0) {
         // Remplir options->portsTab avec les valeurs de 1 à 1024
@@ -62,7 +61,6 @@ int main(int ac, char **av) {
         options.portsTabSize = 1024;
     }
     initialize_status(&options, options.scan_count, MAX_PORT);
-    printf("ici\n");
     options.local_ip = get_local_ip();
     options.local_interface = get_local_interface();
 
@@ -79,13 +77,7 @@ int main(int ac, char **av) {
 
     // Effectuer le scan
     print_starting_message();
-    for(int i = 0; i < options.scan_count; i++)
-    {
-        options.currentScan = i;
-        options.scan_type = options.tabscan[i];
-        printf("scan type : %d\n\n", options.scan_type);
-        syn_scan_all_ports(&options);
-    }
+    tcp_scan_all_ports(&options);
 
     // Afficher les ports, en excluant ceux dans l'état "CLOSED"
     print_ports_excluding_state(&options, "CLOSED");

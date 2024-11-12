@@ -15,7 +15,7 @@ SRC			 			= main.c \
 							parsing/check/check_ports.c \
 							parsing/check/check_scan.c \
 							parsing/check/check_speedup.c \
-							scan/syn.c \
+							scan/scanTCP.c \
 							scan/utils.c \
 							scan/print.c \
 

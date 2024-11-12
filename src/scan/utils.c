@@ -112,8 +112,5 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
                 strcpy(options->status[i][j], "FILTERED");
         }
     }
-
-    // Mettre à jour la taille des ports
-    // options->portsTabSize = num_ports;
 }
 

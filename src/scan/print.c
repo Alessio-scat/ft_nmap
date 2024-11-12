@@ -16,27 +16,6 @@ void print_ports_excluding_state(ScanOptions *options, const char *excluded_stat
     printf("Nmap scan report for %s (%s)\n", options->ip_host, options->ip_address);
     int total_ports = options->portsTabSize;
 
-    // Vérifier si tous les ports ont le même état
-    // if (total_ports > 25) {
-    //     const char *first_state = options->status[0][0];
-    //     int all_ports_identical = 1;
-
-    //     for (int i = 0; i < total_ports; i++) {
-    //         for (int technique = 0; technique < options->scan_count; technique++) {
-    //             if (strcmp(options->status[technique][i], first_state) != 0) {
-    //                 all_ports_identical = 0;
-    //                 break;
-    //             }
-    //         }
-    //         if (!all_ports_identical) break;
-    //     }
-
-    //     if (all_ports_identical) {
-    //         printf("All %d scanned ports are %s\n", total_ports, first_state);
-    //         return;
-    //     }
-    // }
-
     printf("PORT    SERVICE         STATE\n");
 
     // Boucle sur chaque technique de scan dans l'ordre
@@ -63,9 +42,9 @@ void print_ports_excluding_state(ScanOptions *options, const char *excluded_stat
 
         // Afficher les ports pour ce type de scan
         for (int i = 0; i < options->portsTabSize; i++) {
-            if (strcmp(options->status[technique][i], excluded_state) != 0 || options->flag_ports == 1) {
+            if (strcmp(options->status[technique][i], excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)) {
                 const char *service_name = get_service_name(options->portsTab[i]);
-                printf("%d/tcp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][i]);
+                printf("%d/tcp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
             }
         }
     }
