@@ -76,11 +76,15 @@ void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options
     }
     else
         tcph->syn = 0;
-    if (options->scan_type == FIN) {
+    if (options->scan_type == FIN || options->scan_type == XMAS) {
         tcph->fin = 1; 
     }
     tcph->fin = 0;   // Flag FIN désactivé
     tcph->rst = 0;   // Flag RST désactivé
+    if (options->scan_type == XMAS){
+        tcph->psh = 1;   
+        tcph->urg = 1;   
+    }
     tcph->psh = 0;   // Flag PSH désactivé
     tcph->urg = 0;   // Flag URG désactivé
     if (options->scan_type == ACK) {

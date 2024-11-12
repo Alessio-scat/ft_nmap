@@ -42,7 +42,11 @@ void parse_arguments(int ac, char **av, ScanOptions *options) {
 
     if (options->scan_count == 0) {
         options->tabscan[0] = SYN;
-        options->scan_count = 1;
+        options->tabscan[1] = SCAN_NULL;
+        options->tabscan[2] = FIN;
+        options->tabscan[3] = XMAS;
+        options->tabscan[4] = ACK;
+        options->scan_count = 5;
     }
 
     // Minimal validation to ensure either IP or file is specified
