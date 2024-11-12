@@ -17,26 +17,6 @@ void timeout_handler(int signum) {
     }
 }
 
-void print_tcphdr(struct tcphdr *tcph) {
-    printf("=== En-tête TCP ===\n");
-    printf("Source Port: %d\n", ntohs(tcph->source));        // Port source
-    printf("Destination Port: %d\n", ntohs(tcph->dest));      // Port destination
-    printf("Sequence Number: %u\n", ntohl(tcph->seq));        // Numéro de séquence
-    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));  // Numéro d'accusé de réception
-    printf("Data Offset: %d\n", tcph->doff * 4);              // Longueur de l'en-tête TCP
-    printf("Flags: \n");
-    printf("   SYN: %d\n", tcph->syn);                        // Flag SYN
-    printf("   ACK: %d\n", tcph->ack);                        // Flag ACK
-    printf("   RST: %d\n", tcph->rst);                        // Flag RST
-    printf("   FIN: %d\n", tcph->fin);                        // Flag FIN
-    printf("   PSH: %d\n", tcph->psh);                        // Flag PSH
-    printf("   URG: %d\n", tcph->urg);                        // Flag URG
-    printf("Window Size: %d\n", ntohs(tcph->window));         // Taille de la fenêtre
-    printf("Checksum: 0x%x\n", ntohs(tcph->check));           // Checksum TCP
-    printf("Urgent Pointer: %d\n", tcph->urg_ptr);            // Pointeur urgent
-    printf("===================\n");
-}
-
 int create_raw_socket() {
     int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
     if (sockfd < 0) {
@@ -44,45 +24,6 @@ int create_raw_socket() {
         exit(1);
     }
     return sockfd;
-}
-
-// Fonction pour construire l'en-tête IP en utilisant ScanOptions
-void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options) {
-    iph->ihl = 5;
-    iph->version = 4;
-    iph->tos = 0;
-    iph->tot_len = sizeof(struct iphdr) + sizeof(struct tcphdr);
-    iph->id = htonl(54321); // ID unique
-    iph->frag_off = 0;
-    iph->ttl = 255;
-    iph->protocol = IPPROTO_TCP;
-    iph->check = 0; // Checksum sera calculé après
-    iph->saddr = inet_addr(options->local_ip); // Utilisation de l'IP locale stockée dans ScanOptions
-    iph->daddr = dest->sin_addr.s_addr;
-
-    // Calcul du checksum pour l'en-tête IP
-    iph->check = checksum((unsigned short *)iph, sizeof(struct iphdr));
-}
-
-// Fonction pour construire l'en-tête TCP correctement (seulement le SYN doit être activé)
-void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options) {
-    tcph->source = htons(rand() % 65535 + 1024);  // Port source aléatoire
-    tcph->dest = htons(target_port);  // Port cible
-    tcph->seq = 0;
-    tcph->ack_seq = 0;
-    tcph->doff = 5;  // Longueur de l'en-tête TCP
-    if (strcmp(options->scan_type, "SYN") == 0)
-        tcph->syn = 1;   // Flag SYN activé
-    else
-        tcph->syn = 0;
-    tcph->fin = 0;   // Flag FIN désactivé
-    tcph->rst = 0;   // Flag RST désactivé
-    tcph->psh = 0;   // Flag PSH désactivé
-    tcph->urg = 0;   // Flag URG désactivé
-    tcph->ack = 0;   // Flag ACK désactivé
-    tcph->window = htons(5840);  // Taille de la fenêtre TCP
-    tcph->check = 0;  // Le checksum sera calculé plus tard
-    tcph->urg_ptr = 0;  // Pointeur urgent désactivé
 }
 
 
@@ -183,8 +124,6 @@ void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr
         usleep(1000);
     }
 }
-
-#include <pcap.h>
 
 pcap_t *init_pcap(const char *interface) {
     char errbuf[PCAP_ERRBUF_SIZE];

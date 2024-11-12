@@ -53,7 +53,12 @@ int main(int ac, char **av) {
 
     // Effectuer le scan
     print_starting_message();
-    syn_scan_all_ports(&options);
+    //Scan UDP
+    if (strcmp(options.scan_type, "UDP") == 0)
+        udp_scan_all_ports(&options);
+    else
+        syn_scan_all_ports(&options);
+    
 
     // Afficher les ports, en excluant ceux dans l'état "CLOSED"
     print_ports_excluding_state(&options, "CLOSED");

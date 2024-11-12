@@ -15,9 +15,11 @@ SRC			 			= main.c \
 							parsing/check/check_ports.c \
 							parsing/check/check_scan.c \
 							parsing/check/check_speedup.c \
-							scan/syn.c \
-							scan/utils.c \
-							scan/print.c \
+							scan/tcp.c \
+							utils/utils.c \
+							utils/print.c \
+							header/header.c \
+							scan/udp.c \
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	
