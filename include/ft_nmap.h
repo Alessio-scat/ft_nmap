@@ -24,12 +24,23 @@
 #define PORT_CLOSED 0
 #define PORT_FILTERED -1
 
+#define SYN 1
+#define SCAN_NULL 2 // Remplace NULL par SCAN_NULL
+#define FIN 3
+#define XMAS 4
+#define ACK 5
+#define UDP 6
+
+#define MAX_SCANS 6
+
+
+
 typedef struct {
     char *ip_address;
     char *ip_host;
     char *ports;
     int speedup;
-    char *scan_type;
+    int scan_type;
     int portsTab[MAX_PORT];
     int flag_ports;
     int portsTabSize;   
@@ -40,7 +51,9 @@ typedef struct {
     char *local_ip;
     char *local_interface;
     char ***status;
-    
+    int scan_count;
+    int tabscan[MAX_SCANS];
+    int currentScan;
 } ScanOptions;
 
 typedef struct {
@@ -72,8 +85,10 @@ unsigned short checksum(void *b, int len);
 char *get_local_ip();
 char *get_local_interface();
 void print_scan_result(int port, const char *service, const char *state);
+void print_help();
 
 void initialize_status(ScanOptions *options, int num_techniques, int num_ports);
 void print_ports_excluding_state(ScanOptions *options, const char *excluded_state);
+const char* get_scan_name(int scan_code);
 
 #endif

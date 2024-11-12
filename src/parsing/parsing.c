@@ -40,6 +40,11 @@ void parse_arguments(int ac, char **av, ScanOptions *options) {
         }
     }
 
+    if (options->scan_count == 0) {
+        options->tabscan[0] = SYN;
+        options->scan_count = 1;
+    }
+
     // Minimal validation to ensure either IP or file is specified
     if (options->ip_address == NULL && options->file == NULL) {
         fprintf(stderr, "Error: You must specify an IP address with --ip or a file with --file.\n"); exit(1);

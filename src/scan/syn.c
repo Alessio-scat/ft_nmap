@@ -71,8 +71,9 @@ void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options
     tcph->seq = 0;
     tcph->ack_seq = 0;
     tcph->doff = 5;  // Longueur de l'en-tête TCP
-    if (strcmp(options->scan_type, "SYN") == 0)
+    if (options->scan_type == SYN){
         tcph->syn = 1;   // Flag SYN activé
+    }
     else
         tcph->syn = 0;
     tcph->fin = 0;   // Flag FIN désactivé
@@ -134,27 +135,24 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
         // printf("Port out of bounds: %d\n", port);
         return;
     }
-
-    // Identifier la technique utilisée (par exemple SYN scan)
-    int technique = 0; // Si tu as plusieurs techniques, tu dois trouver un moyen de l'identifier ici
     
     // Vérifier si le paquet est un paquet TCP
     if (iph->protocol == IPPROTO_TCP) {
-        if (strcmp(options->scan_type, "SYN") == 0) {  // Scan SYN
+        if (options->scan_type == SYN) {  // Scan SYN
             if (tcph->syn == 1 && tcph->ack == 1) {
                 // Port ouvert
-                strcpy(options->status[technique][port - 1], "OPEN");
+                strcpy(options->status[options->currentScan][port - 1], "OPEN");
             } else if (tcph->rst == 1) {
                 // Port fermé
-                strcpy(options->status[technique][port - 1], "CLOSED");
+                strcpy(options->status[options->currentScan][port - 1], "CLOSED");
             }
-        } else if (strcmp(options->scan_type, "NULL") == 0) {  // Scan NULL
+        } else if (options->scan_type == SCAN_NULL) {  // Scan NULL
             if (tcph->rst == 1) {
                 // Port fermé
-                strcpy(options->status[technique][port - 1], "CLOSED");
+                strcpy(options->status[options->currentScan][port - 1], "CLOSED");
             } else {
                 // Absence de réponse interprétée comme port ouvert ou filtré
-                strcpy(options->status[technique][port - 1], "OPEN/FILTERED");
+                strcpy(options->status[options->currentScan][port - 1], "OPEN|FILTERED");
             }
         }
     }
@@ -171,6 +169,7 @@ void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr
     for (int j = 0; j < options->portsTabSize; j++) {
         int target_port = options->portsTab[j];
         // printf("%d\n", options->portsTabSize);
+        // printf("%d\n", target_port);
         dest->sin_port = htons(target_port);
 
         // Construire l'en-tête TCP pour chaque port

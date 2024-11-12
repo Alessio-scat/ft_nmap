@@ -106,7 +106,10 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
                 perror("Failed to allocate memory for status entry");
                 exit(1);
             }
-            strcpy(options->status[i][j], "FILTERED");
+            if(options->tabscan[i] == 2)
+                strcpy(options->status[i][j], "OPEN|FILTERED");
+            else
+                strcpy(options->status[i][j], "FILTERED");
         }
     }
 
