@@ -49,37 +49,35 @@ int create_udp_socket() {
 }
 
 void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    (void)pkthdr;
+    printf("Paquet capturé de longueur : %d\n", pkthdr->len);
     ScanOptions *options = (ScanOptions *)user_data;
 
-    struct iphdr *iph = (struct iphdr *)(packet + 14); // En-tête IP après l'en-tête Ethernet
-    int protocol = iph->protocol;
-    printf("je passe\n");
-    if (protocol == IPPROTO_ICMP) {
+    struct iphdr *iph = (struct iphdr *)(packet + 14);  // IP header après Ethernet header
+    printf("Protocole IP détecté : %d\n", iph->protocol);
+
+    if (iph->protocol == IPPROTO_ICMP) {
+        printf("Paquet ICMP détecté\n");
         struct icmphdr *icmph = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
 
         // Vérifie si c'est un message "Port Unreachable"
+        printf("ICMP type: %d, code: %d\n", icmph->type, icmph->code);
         if (icmph->type == 3 && icmph->code == 3) {
-            printf("TEST - ICMP Port Unreachable reçu\n");
+            printf("ICMP Port Unreachable reçu\n");
 
-            // Se déplacer jusqu'à l'en-tête UDP encapsulé dans le message ICMP
-            // iph->ihl est en nombre de mots de 32 bits, donc on multiplie par 4 pour obtenir des octets
+            // Traitement des informations du paquet ICMP pour obtenir le port
             struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
             int inner_ip_header_length = inner_iph->ihl * 4;
-
-            // Calculer le début de l'en-tête UDP dans le paquet ICMP
             struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
             int port = ntohs(udph->dest);
-            printf("Port détecté : %d, Max autorisé : %d\n", port, MAX_PORT);
+            printf("Port fermé détecté : %d\n", port);
 
-            // Vérifie si le port est dans la plage autorisée
             if (port > 0 && port <= MAX_PORT) {
-                printf("Port %d marqué comme CLOSED\n", port);
                 strcpy(options->status[0][port - 1], "CLOSED");
             }
         }
     }
 }
+
 
 
 
@@ -100,7 +98,7 @@ pcap_t *init_pcap_udp(const char *interface) {
 
     // Appliquer un filtre BPF pour capturer les paquets TCP ou ICMP
     struct bpf_program fp;
-    char filter_exp[] = "icmp";  // Filtre pour capturer les paquets TCP et ICMP
+    char filter_exp[] = "";
     if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
         fprintf(stderr, "Error compiling BPF filter: %s\n", pcap_geterr(handle));
         pcap_close(handle);
@@ -120,6 +118,23 @@ pcap_t *init_pcap_udp(const char *interface) {
     return handle;
 }
 
+// void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
+//     global_handle_udp = handle;
+
+//     // Définir un timeout (exemple: 15 secondes)
+//     signal(SIGALRM, timeout_handler_udp);
+//     alarm(5);  // Timeout de 15 secondes
+
+//     // Capture des paquets en boucle jusqu'à expiration du délai
+//     while (!stop_pcap_udp) {
+//         printf("cdcdcdcdc\n");
+//         pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
+//     }
+
+//     // Réinitialiser et fermer pcap
+//     alarm(5);
+//     global_handle_udp = NULL;
+// }
 void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
     global_handle_udp = handle;
 
@@ -127,13 +142,23 @@ void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
     signal(SIGALRM, timeout_handler_udp);
     alarm(15);  // Timeout de 15 secondes
 
-    // Capture des paquets en boucle jusqu'à expiration du délai
+    int res;
     while (!stop_pcap_udp) {
-        pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
+        printf("Attente de paquets...\n");  // Log supplémentaire
+
+        res = pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
+        
+        if (res == -1) {
+            fprintf(stderr, "Erreur dans pcap_dispatch : %s\n", pcap_geterr(handle));
+            break;
+        } else if (res == 0) {
+            printf("Aucun paquet capturé dans ce cycle...\n");  // Aucun paquet capturé
+        } else {
+            printf("Nombre de paquets capturés : %d\n", res);  // Nombre de paquets capturés
+        }
     }
 
-    // Réinitialiser et fermer pcap
-    alarm(15);
+    alarm(0);  // Arrêter l'alarme si la boucle se termine
     global_handle_udp = NULL;
 }
 

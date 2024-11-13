@@ -106,7 +106,11 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
                 perror("Failed to allocate memory for status entry");
                 exit(1);
             }
-            strcpy(options->status[i][j], "FILTERED");
+            if (strcmp(options->scan_type, "UDP") == 0) {
+                strcpy(options->status[i][j], "open|filtered");
+            } else {
+                strcpy(options->status[i][j], "FILTERED");
+            }
         }
     }
 

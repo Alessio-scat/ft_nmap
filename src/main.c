@@ -55,7 +55,10 @@ int main(int ac, char **av) {
     print_starting_message();
     //Scan UDP
     if (strcmp(options.scan_type, "UDP") == 0)
+    {
+        printf("111\n");
         udp_scan_all_ports(&options);
+    }
     else
         syn_scan_all_ports(&options);
     
