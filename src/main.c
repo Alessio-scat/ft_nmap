@@ -44,7 +44,7 @@ void print_scan_types(ScanOptions *options) {
 
 int main(int ac, char **av) {
     // Initialisation de ScanOptions
-    ScanOptions options = {NULL, NULL, NULL, 0, 0, {0}, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, {0}, 0};
+    ScanOptions options = {NULL, NULL, NULL, 0, 0, {0}, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, {0}, 0, 0};
 
     // Capturer le temps de début
     struct timeval start, end;
@@ -61,12 +61,14 @@ int main(int ac, char **av) {
         options.portsTabSize = 1024;
     }
     initialize_status(&options, options.scan_count, MAX_PORT);
-    options.local_ip = get_local_ip();
-    options.local_interface = get_local_interface();
-
+    int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
+    options.local_ip = get_local_ip(use_loopback);
+    options.local_interface = get_local_interface(use_loopback);
     // Afficher la configuration de la commande
     printf("-----------COMMAND--------------\n");
     printf("IP Address: %s\n", options.ip_address);
+    printf("IP locale: %s\n", options.local_ip);
+    printf("IP locale: %s\n", options.local_interface);
     printf("Ports: %s\n", options.ports);
     printf("File: %s\n", options.file);
     for (int j = 0; j < options.ip_count; j++)

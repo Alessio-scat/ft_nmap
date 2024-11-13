@@ -54,6 +54,7 @@ typedef struct {
     int scan_count;
     int tabscan[MAX_SCANS];
     int currentScan;
+    int ttl;
 } ScanOptions;
 
 typedef struct {
@@ -82,8 +83,8 @@ void tcp_scan_all_ports(ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);
-char *get_local_ip();
-char *get_local_interface();
+char *get_local_ip(int use_loopback);
+char *get_local_interface(int use_loopback);
 void print_scan_result(int port, const char *service, const char *state);
 void print_help();
 

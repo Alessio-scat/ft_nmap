@@ -23,7 +23,7 @@ unsigned short checksum(void *b, int len) {
 }
 
 // Fonction pour récupérer l'adresse IP locale
-char *get_local_ip() {
+char *get_local_ip(int use_loopback) {
     struct ifaddrs *ifap, *ifa;
     char *addr = NULL;
 
@@ -35,12 +35,18 @@ char *get_local_ip() {
     for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
         // Vérifier si c'est une interface IPv4
         if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
-            // Ignorer les interfaces inactives ou l'interface de boucle locale (lo)
+            // Si use_loopback est activé, retourne l'adresse IP de la loopback (127.0.0.1)
+            if (use_loopback && (ifa->ifa_flags & IFF_LOOPBACK)) {
+                addr = strdup(inet_ntoa(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr));
+                printf("Interface Loopback: %s, IP: %s\n", ifa->ifa_name, addr);
+                break;
+            }
+
+            // Sinon, ignorer la loopback et prendre une interface active non-loopback
             if ((ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_LOOPBACK)) {
-                // Copier l'adresse IP si l'interface est active et pas la loopback
                 addr = strdup(inet_ntoa(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr));
                 printf("Interface: %s, IP: %s\n", ifa->ifa_name, addr);
-                break;  // Si tu veux seulement la première IP, sinon ne pas mettre break
+                break;
             }
         }
     }
@@ -49,30 +55,33 @@ char *get_local_ip() {
     return addr;
 }
 
-char *get_local_interface() {
+
+char *get_local_interface(int use_loopback) {
     pcap_if_t *alldevs, *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
     char *local_interface = NULL;
 
-    // Récupère toutes les interfaces réseau disponibles
     if (pcap_findalldevs(&alldevs, errbuf) == -1) {
         fprintf(stderr, "Erreur lors de la récupération des interfaces : %s\n", errbuf);
         return NULL;
     }
 
-    // Parcours la liste des interfaces pour trouver une interface valide
-    for (dev = alldevs; dev != NULL; dev = dev->next) {
-        if (dev->flags & PCAP_IF_UP) { // Vérifie si l'interface est active (up)
-            // Copie le nom de l'interface dans local_interface
-            local_interface = strdup(dev->name);
-            break;
+    // Forcer l'interface loopback si `use_loopback` est défini
+    if (use_loopback) {
+        local_interface = strdup("lo");
+        printf("Interface Loopback utilisée : %s\n", local_interface);
+    } else {
+        // Parcours la liste des interfaces pour trouver une interface valide autre que loopback
+        for (dev = alldevs; dev != NULL; dev = dev->next) {
+            if (dev->flags & PCAP_IF_UP && !(dev->flags & PCAP_IF_LOOPBACK)) {
+                local_interface = strdup(dev->name);
+                break;
+            }
         }
     }
 
-    // Libère la liste des interfaces
     pcap_freealldevs(alldevs);
 
-    // Si aucune interface n'a été trouvée
     if (local_interface == NULL) {
         fprintf(stderr, "Aucune interface réseau active trouvée\n");
     }

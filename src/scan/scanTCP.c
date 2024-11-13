@@ -138,14 +138,24 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
     struct iphdr *iph = (struct iphdr *)(packet + 14); 
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4); 
 
-    // Identifier le port cible
-    int port = ntohs(tcph->source);  // Port source (ou destination selon ton besoin)
-
-    // Vérifier que le port est dans les limites
-    if (port > MAX_PORT || port == 0) {
-        // printf("Port out of bounds: %d\n", port);
+    // Vérifier si le paquet provient de l'IP cible
+    struct in_addr source_addr;
+    source_addr.s_addr = iph->saddr;
+    
+    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
+        // printf("Paquet ignoré de %s\n", inet_ntoa(source_addr));
         return;
     }
+    // Identifier le port cible
+    int port = ntohs(tcph->source);  // Port source (ou destination selon ton besoin)
+    // Vérifier que le port est dans les limites
+    if (port > MAX_PORT || port == 0) {
+        return;
+    }
+    if(options->ttl == 0)
+        options->ttl = iph->ttl;
+    // printf("TTL de la cible : %d port : %d\n", iph->ttl, port);
+
     
     // Vérifier si le paquet est un paquet TCP
     if (iph->protocol == IPPROTO_TCP) {
@@ -157,11 +167,13 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
                 // Port fermé
                 strcpy(options->status[options->currentScan][port - 1], "CLOSED");
             }
-        } else if (options->scan_type == SCAN_NULL) {  // Scan NULL
+        } else if (options->scan_type == SCAN_NULL || options->scan_type == FIN || options->scan_type == XMAS) {  // Scan NULL
             if (tcph->rst == 1) {
+                // printf("passe %d\n", port);
                 // Port fermé
                 strcpy(options->status[options->currentScan][port - 1], "CLOSED");
             } else {
+                // printf("yo %d\n", port);
                 // Absence de réponse interprétée comme port ouvert ou filtré
                 strcpy(options->status[options->currentScan][port - 1], "OPEN|FILTERED");
             }
@@ -175,7 +187,7 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
             }
         }
     }
-    alarm(5);
+    alarm(2);
 
     // Tu peux aussi traiter les paquets ICMP ou autres protocoles ici si besoin
 
