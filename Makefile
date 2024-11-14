@@ -18,6 +18,9 @@ SRC			 			= main.c \
 							scan/scanTCP.c \
 							scan/utils.c \
 							scan/print.c \
+							scan/packetHandler.c \
+							scan/build.c \
+							scan/send.c \
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	

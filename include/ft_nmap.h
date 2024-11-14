@@ -18,6 +18,7 @@
 #include <net/if.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <netinet/ip_icmp.h>
 
 #define MAX_PORT 1024
 #define PORT_OPEN 1
@@ -78,8 +79,11 @@ typedef struct {
 */
 void parse_arguments(int ac, char **av, ScanOptions *options);
 
-//scan SYN
+//scan
 void tcp_scan_all_ports(ScanOptions *options);
+void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest);
+void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);
@@ -91,5 +95,11 @@ void print_help();
 void initialize_status(ScanOptions *options, int num_techniques, int num_ports);
 void print_ports_excluding_state(ScanOptions *options, char *excluded_state);
 const char* get_scan_name(int scan_code);
+
+//build
+void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options);
+void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+int create_raw_socket();
+
 
 #endif
