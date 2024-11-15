@@ -56,6 +56,7 @@ typedef struct {
     int tabscan[MAX_SCANS];
     int currentScan;
     int ttl;
+    int OS;
 } ScanOptions;
 
 typedef struct {

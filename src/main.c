@@ -44,7 +44,7 @@ void print_scan_types(ScanOptions *options) {
 
 int main(int ac, char **av) {
     // Initialisation de ScanOptions
-    ScanOptions options = {NULL, NULL, NULL, 0, 0, {0}, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, {0}, 0, 0};
+    ScanOptions options = {NULL, NULL, NULL, 0, 0, {0}, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, {0}, 0, 0, 0};
 
     // Capturer le temps de début
     struct timeval start, end;

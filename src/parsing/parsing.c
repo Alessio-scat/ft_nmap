@@ -19,6 +19,7 @@ void print_help() {
     printf("--file [FILE]            File name containing IP addresses to scan\n");
     printf("--speedup [NUMBER]       Number of parallel threads to use (max 250)\n");
     printf("--scan [TYPE]            Type of scan to perform (SYN/NULL/FIN/XMAS/ACK/UDP)\n");
+    printf("--O                      Flag for OS detection\n");
 }
 
 void parse_arguments(int ac, char **av, ScanOptions *options) {
@@ -35,7 +36,11 @@ void parse_arguments(int ac, char **av, ScanOptions *options) {
             handle_speedup_option(&i, ac, av, options);
         } else if (strcmp(av[i], "--scan") == 0) {
             handle_scan_option(&i, ac, av, options);
-        } else {
+        } 
+        else if (strcmp(av[i], "--O") == 0) {
+            options->OS = 1;
+        }
+        else {
             fprintf(stderr, "Unknown argument: %s\n", av[i]); print_help(); exit(1);
         }
     }
