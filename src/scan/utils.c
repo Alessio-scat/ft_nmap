@@ -23,7 +23,7 @@ unsigned short checksum(void *b, int len) {
 }
 
 // Fonction pour récupérer l'adresse IP locale
-char *get_local_ip() {
+char *get_local_ip(int use_loopback) {
     struct ifaddrs *ifap, *ifa;
     char *addr = NULL;
 
@@ -35,12 +35,18 @@ char *get_local_ip() {
     for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
         // Vérifier si c'est une interface IPv4
         if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
-            // Ignorer les interfaces inactives ou l'interface de boucle locale (lo)
+            // Si use_loopback est activé, retourne l'adresse IP de la loopback (127.0.0.1)
+            if (use_loopback && (ifa->ifa_flags & IFF_LOOPBACK)) {
+                addr = strdup(inet_ntoa(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr));
+                printf("Interface Loopback: %s, IP: %s\n", ifa->ifa_name, addr);
+                break;
+            }
+
+            // Sinon, ignorer la loopback et prendre une interface active non-loopback
             if ((ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_LOOPBACK)) {
-                // Copier l'adresse IP si l'interface est active et pas la loopback
                 addr = strdup(inet_ntoa(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr));
                 printf("Interface: %s, IP: %s\n", ifa->ifa_name, addr);
-                break;  // Si tu veux seulement la première IP, sinon ne pas mettre break
+                break;
             }
         }
     }
@@ -49,30 +55,33 @@ char *get_local_ip() {
     return addr;
 }
 
-char *get_local_interface() {
+
+char *get_local_interface(int use_loopback) {
     pcap_if_t *alldevs, *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
     char *local_interface = NULL;
 
-    // Récupère toutes les interfaces réseau disponibles
     if (pcap_findalldevs(&alldevs, errbuf) == -1) {
         fprintf(stderr, "Erreur lors de la récupération des interfaces : %s\n", errbuf);
         return NULL;
     }
 
-    // Parcours la liste des interfaces pour trouver une interface valide
-    for (dev = alldevs; dev != NULL; dev = dev->next) {
-        if (dev->flags & PCAP_IF_UP) { // Vérifie si l'interface est active (up)
-            // Copie le nom de l'interface dans local_interface
-            local_interface = strdup(dev->name);
-            break;
+    // Forcer l'interface loopback si `use_loopback` est défini
+    if (use_loopback) {
+        local_interface = strdup("lo");
+        printf("Interface Loopback utilisée : %s\n", local_interface);
+    } else {
+        // Parcours la liste des interfaces pour trouver une interface valide autre que loopback
+        for (dev = alldevs; dev != NULL; dev = dev->next) {
+            if (dev->flags & PCAP_IF_UP && !(dev->flags & PCAP_IF_LOOPBACK)) {
+                local_interface = strdup(dev->name);
+                break;
+            }
         }
     }
 
-    // Libère la liste des interfaces
     pcap_freealldevs(alldevs);
 
-    // Si aucune interface n'a été trouvée
     if (local_interface == NULL) {
         fprintf(stderr, "Aucune interface réseau active trouvée\n");
     }
@@ -106,42 +115,11 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
                 perror("Failed to allocate memory for status entry");
                 exit(1);
             }
-            strcpy(options->status[i][j], "FILTERED");
-        }
-    }
-
-    // Mettre à jour la taille des ports
-    // options->portsTabSize = num_ports;
-}
-
-void print_ports_excluding_state(ScanOptions *options, const char *excluded_state) {
-    printf("Results for %s(%s)\n", options->ip_host, options->ip_address);
-    int excluded_count = 0;
-
-    // Comptage des ports dans l'état spécifié (par exemple, "CLOSED")
-    for (int i = 0; i < options->portsTabSize; i++) {
-        for (int technique = 0; technique < 1; technique++) {  // Si tu as plusieurs techniques, il faut boucler dessus
-            if (strcmp(options->status[technique][i], excluded_state) == 0) {
-                excluded_count++;
-            }
-        }
-    }
-
-    // Affichage du nombre de ports dans l'état exclu
-    printf("%d ports on state %s\n", excluded_count, excluded_state);
-
-    // Affichage des détails des ports qui ne sont pas dans cet état exclu
-    printf("    PORT    SERVICE         STATE\n");
-    for (int i = 0; i < options->portsTabSize; i++) {
-        for (int technique = 0; technique < 1; technique++) {
-            if (strcmp(options->status[technique][options->portsTab[i] - 1], excluded_state) != 0 || options->flag_ports == 1) {  // On affiche les ports qui ne sont pas dans l'état exclu
-                // Obtenir le nom du service pour le port
-                struct servent *service_entry = getservbyport(htons(options->portsTab[i]), "tcp");
-                const char *service_name = (service_entry != NULL) ? service_entry->s_name : "unknown";
-
-                // Afficher les détails du port
-                printf("    %5d    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
-            }
+            if(options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4)
+                strcpy(options->status[i][j], "OPEN|FILTERED");
+            else
+                strcpy(options->status[i][j], "FILTERED");
         }
     }
 }
+
