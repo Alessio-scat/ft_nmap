@@ -9,17 +9,20 @@ HEADER_FILE				= ft_nmap.h
 
 DIR						= src/
 SRC			 			= main.c \
-							parsing/parsing.c \
 							parsing/check/check_file.c \
 							parsing/check/check_ip.c \
 							parsing/check/check_ports.c \
 							parsing/check/check_scan.c \
 							parsing/check/check_speedup.c \
-							scan/tcp.c \
-							utils/utils.c \
-							utils/print.c \
-							header/header.c \
+							parsing/parsing.c \
+							scan/build.c \
+							scan/packetHandler.c \
+							scan/scanTCP.c \
+							scan/send.c \
 							scan/udp.c \
+							scan/utils.c \
+							scan/print.c \
+							
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	

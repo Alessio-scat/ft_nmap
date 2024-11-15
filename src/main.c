@@ -18,9 +18,33 @@ void print_starting_message() {
     printf("Starting ft_nmap at %s\n", time_str);
 }
 
+const char* get_scan_name(int scan_code) {
+    switch (scan_code) {
+        case SYN: return "SYN";
+        case SCAN_NULL: return "NULL";
+        case FIN: return "FIN";
+        case XMAS: return "XMAS";
+        case ACK: return "ACK";
+        case UDP: return "UDP";
+        default: return "UNKNOWN"; // Pour gérer des cas non définis
+    }
+}
+
+void print_scan_types(ScanOptions *options) {
+    printf("Selected scan types: ");
+    for (int i = 0; i < options->scan_count; i++) {
+        printf("%s", get_scan_name(options->tabscan[i]));
+        if (i < options->scan_count - 1) {
+            printf(", "); // Ajouter une virgule entre les types de scan
+        }
+    }
+    printf("\n");
+}
+
+
 int main(int ac, char **av) {
     // Initialisation de ScanOptions
-    ScanOptions options = {NULL, NULL, NULL, 0, NULL, {0}, 0, 0, NULL, NULL, 0, NULL, NULL, NULL};
+    ScanOptions options = {NULL, NULL, NULL, 0, 0, {0}, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, {0}, 0, 0};
 
     // Capturer le temps de début
     struct timeval start, end;
@@ -36,32 +60,35 @@ int main(int ac, char **av) {
         // Mettre à jour la taille du tableau
         options.portsTabSize = 1024;
     }
-    initialize_status(&options, 1, MAX_PORT);
-    options.local_ip = get_local_ip();
-    options.local_interface = get_local_interface();
-
+    initialize_status(&options, options.scan_count, MAX_PORT);
+    int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
+    options.local_ip = get_local_ip(use_loopback);
+    options.local_interface = get_local_interface(use_loopback);
     // Afficher la configuration de la commande
     printf("-----------COMMAND--------------\n");
     printf("IP Address: %s\n", options.ip_address);
+    printf("IP locale: %s\n", options.local_ip);
+    printf("IP locale: %s\n", options.local_interface);
     printf("Ports: %s\n", options.ports);
     printf("File: %s\n", options.file);
     for (int j = 0; j < options.ip_count; j++)
         printf("   Stored IP: %s\n", options.ip_list[j]);
     printf("Speedup: %d\n", options.speedup);
-    printf("Scan Type: %s\n", options.scan_type);
+    print_scan_types(&options);
     printf("--------------------------------\n");
 
     // Effectuer le scan
     print_starting_message();
     //Scan UDP
-    if (strcmp(options.scan_type, "UDP") == 0)
-    {
-        printf("111\n");
-        udp_scan_all_ports(&options);
-    }
-    else
-        syn_scan_all_ports(&options);
+    // if (strcmp(options.scan_type, "UDP") == 0)
+    // {
+    //     printf("111\n");
+    //     udp_scan_all_ports(&options);
+    // }
+    // else
+    //     syn_scan_all_ports(&options);
     
+    tcp_scan_all_ports(&options);
 
     // Afficher les ports, en excluant ceux dans l'état "CLOSED"
     print_ports_excluding_state(&options, "CLOSED");

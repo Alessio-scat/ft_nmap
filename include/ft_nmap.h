@@ -26,12 +26,23 @@
 #define PORT_CLOSED 0
 #define PORT_FILTERED -1
 
+#define SYN 1
+#define SCAN_NULL 2
+#define FIN 3
+#define XMAS 4
+#define ACK 5
+#define UDP 6
+
+#define MAX_SCANS 6
+
+
+
 typedef struct {
     char *ip_address;
     char *ip_host;
     char *ports;
     int speedup;
-    char *scan_type;
+    int scan_type;
     int portsTab[MAX_PORT];
     int flag_ports;
     int portsTabSize;   
@@ -42,7 +53,10 @@ typedef struct {
     char *local_ip;
     char *local_interface;
     char ***status;
-    
+    int scan_count;
+    int tabscan[MAX_SCANS];
+    int currentScan;
+    int ttl;
 } ScanOptions;
 
 typedef struct {
@@ -66,21 +80,27 @@ typedef struct {
 */
 void parse_arguments(int ac, char **av, ScanOptions *options);
 
-//scan SYN
-void syn_scan_all_ports(ScanOptions *options);
+//scan
+void tcp_scan_all_ports(ScanOptions *options);
+void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest);
+void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);
-char *get_local_ip();
-char *get_local_interface();
+char *get_local_ip(int use_loopback);
+char *get_local_interface(int use_loopback);
 void print_scan_result(int port, const char *service, const char *state);
+void print_help();
 
 void initialize_status(ScanOptions *options, int num_techniques, int num_ports);
-void print_ports_excluding_state(ScanOptions *options, const char *excluded_state);
+void print_ports_excluding_state(ScanOptions *options, char *excluded_state);
+const char* get_scan_name(int scan_code);
 
-//header
-void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+//build
 void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options);
+void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+int create_raw_socket();
 
 //udp.c
 void udp_scan_all_ports(ScanOptions *options);
