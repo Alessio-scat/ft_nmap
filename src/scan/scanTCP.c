@@ -75,7 +75,7 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
 
     // Définir un timeout (exemple: 15 secondes)
     signal(SIGALRM, timeout_handler);
-    alarm(15);  // Timeout de 15 secondes
+    alarm(5);  // Timeout de 15 secondes
 
     // Capture des paquets en boucle jusqu'à expiration du délai
     while (!stop_pcap) {
@@ -115,7 +115,6 @@ void tcp_scan_all_ports(ScanOptions *options) {
         stop_pcap = false;
         options->currentScan = i;
         options->scan_type = options->tabscan[i];
-        printf("%d\n", options->scan_type);
         if(options->scan_type == 6){
             udp_scan_all_ports(options);
         }

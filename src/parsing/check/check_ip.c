@@ -34,63 +34,71 @@ char *resolve_hostname_to_ip(const char *hostname) {
         ip_address = strdup(inet_ntoa(ipv4->sin_addr));
         freeaddrinfo(res);  // Libérer la mémoire allouée par getaddrinfo
     } else {
-        fprintf(stderr, "Error: Unable to resolve hostname: %s\n", hostname);
-        exit(1);
+        return NULL;
     }
     
     return ip_address;
 }
 
-// Gérer l'option --ip
 void handle_ip_option(int *i, int ac, char **av, ScanOptions *options) {
-    if (*i + 1 < ac) {
+
+    // Parcourir les arguments suivants jusqu'à rencontrer un autre flag ou la fin des arguments
+    while (*i < ac && strncmp(av[*i + 1], "--", 2) != 0) {
         char *input = av[*i + 1];
-        options->ip_host = strdup(input); // Stocke l'IP ou le nom d'hôte
 
-        // Vérifie si l'entrée est une adresse IP valide
-        struct sockaddr_in sa;
-        if (inet_pton(AF_INET, input, &(sa.sin_addr)) == 1) {
-            // Si c'est une IP valide, l'utiliser directement
-            options->ip_address = strdup(input);
-        } else {
-            // Sinon, essayer de résoudre le nom de domaine
-            options->ip_address = resolve_hostname_to_ip(input);
-        }
-
-        if (options->ip_address == NULL) {
-            fprintf(stderr, "Error: Unable to resolve IP address for %s\n", input);
+        // Ajoute l'IP ou le nom d'hôte à la liste des IP
+        options->ip_list = realloc(options->ip_list, (options->ip_count + 1) * sizeof(char *));
+        if (options->ip_list == NULL) {
+            fprintf(stderr, "Error: Memory allocation failed for ip_list.\n");
             exit(1);
         }
+        options->ip_list[options->ip_count] = strdup(input);
+        if (options->ip_list[options->ip_count] == NULL) {
+            fprintf(stderr, "Error: Memory allocation failed for IP string.\n");
+            exit(1);
+        }
+        options->ip_count++;
+
         (*i)++;
-    } else {
-        fprintf(stderr, "Error: --ip option requires an IP address or hostname.\n");
+    }
+
+    // Vérifier si aucune IP n'a été ajoutée
+    if (options->ip_count == 0) {
+        fprintf(stderr, "Error: --ip option requires at least one IP address or hostname.\n");
         exit(1);
     }
 }
 
-void handle_ip_option_in_file(int ip_index, ScanOptions *options) {
-    if (ip_index >= 0 && ip_index < options->ip_count) {
-        // Récupère l'IP à partir du tableau ip_list en fonction de ip_index
-        char *selected_ip = options->ip_list[ip_index];
-        options->ip_host = strdup(selected_ip); // Stocke l'IP ou le nom d'hôte
+
+void handle_ip_option_in_file(int *ip_index, ScanOptions *options) {
+    while (*ip_index >= 0 && *ip_index < options->ip_count) {
+        char *selected_ip = options->ip_list[*ip_index];
+
+        // Tente de stocker l'IP ou le nom d'hôte
+        options->ip_host = strdup(selected_ip);
 
         // Vérifie si l'entrée est une adresse IP valide
         struct sockaddr_in sa;
         if (inet_pton(AF_INET, selected_ip, &(sa.sin_addr)) == 1) {
-            // Si c'est une IP valide, l'utiliser directement
+            // Si c'est une IP valide
             options->ip_address = strdup(selected_ip);
         } else {
-            // Sinon, essayer de résoudre le nom de domaine
+            // Résolution du nom de domaine
             options->ip_address = resolve_hostname_to_ip(selected_ip);
         }
 
         if (options->ip_address == NULL) {
-            fprintf(stderr, "Error: Unable to resolve IP address for %s\n", selected_ip);
-            exit(1);
+            fprintf(stderr, "Error: Unable to resolve IP address for %s. Skipping.\n\n", selected_ip);
+            (*ip_index)++; // Passe à l'adresse suivante
+            continue; // Essaie la prochaine adresse
         }
-    } else {
-        fprintf(stderr, "Error: Invalid IP index (%d). Must be between 0 and %d.\n", ip_index, options->ip_count - 1);
+        break; // Quitte la boucle après une résolution réussie
+    }
+
+    if (*ip_index >= options->ip_count) {
+        fprintf(stderr, "Error: No valid IP addresses found.\n");
         exit(1);
     }
 }
+
 

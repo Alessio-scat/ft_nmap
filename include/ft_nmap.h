@@ -74,13 +74,12 @@ typedef struct {
     int port_status;      // Statut du port (ouvert, fermé, filtré)
 } pcap_data_t;
 
-
-
 /*
     parsing.c
 */
 void parse_arguments(int ac, char **av, ScanOptions *options);
-void handle_ip_option_in_file(int ip_index, ScanOptions *options);
+void handle_ip_option_in_file(int *ip_index, ScanOptions *options);
+
 
 //scan
 void tcp_scan_all_ports(ScanOptions *options);
@@ -95,6 +94,7 @@ char *get_local_ip(int use_loopback);
 char *get_local_interface(int use_loopback);
 void print_scan_result(int port, const char *service, const char *state);
 void print_help();
+void reset_status(ScanOptions *options, int scan_count, int max_ports);
 
 void initialize_status(ScanOptions *options, int num_techniques, int num_ports);
 void print_ports_excluding_state(ScanOptions *options, char *excluded_state);
