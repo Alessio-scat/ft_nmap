@@ -58,6 +58,14 @@ void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, con
 
     struct iphdr *iph = (struct iphdr *)(packet + 14);  // En-tête IP après l'en-tête Ethernet
     printf("Protocole IP détecté : %d\n", iph->protocol);
+    struct in_addr source_addr;
+    source_addr.s_addr = iph->saddr;
+    
+    printf("%s\n",inet_ntoa(source_addr));
+    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
+        // Ignorer les paquets provenant d'autres IPs
+        return;
+    }
 
     // Cas des paquets ICMP
     if (iph->protocol == IPPROTO_ICMP) {
@@ -96,7 +104,7 @@ void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, con
     // Cas des paquets UDP - Si une réponse UDP valide est capturée, marquer le port comme "OPEN"
     else if (iph->protocol == IPPROTO_UDP) {
         struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
-        int port = ntohs(udph->dest);  // Utilise le port source de la réponse UDP pour identifier le port cible scanné
+        int port = ntohs(udph->source);  // Utilise le port source de la réponse UDP pour identifier le port cible scanné
         printf("Réponse UDP détectée pour le port : %d\n", port);
 
         // Mettre à jour le statut du port en "OPEN" si réponse UDP reçue

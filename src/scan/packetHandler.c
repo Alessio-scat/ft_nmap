@@ -34,7 +34,6 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
 void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);
     int port = ntohs(tcph->source);
-
     if (port <= 0 || port > MAX_PORT) {
         return; // Ignorer les ports hors limites
     }
@@ -69,12 +68,12 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
             strcpy(options->status[options->currentScan][port - 1], "FILTERED");
         }
     }
+    printf("yoooooooooooooooo\n");
 }
 
 // Fonction principale de gestion des paquets
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     (void)pkthdr;
-
     // Récupération des données utilisateur (ScanOptions)
     ScanOptions *options = (ScanOptions *)user_data;
 

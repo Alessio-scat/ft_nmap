@@ -61,18 +61,30 @@ int main(int ac, char **av) {
         options.portsTabSize = 1024;
     }
     initialize_status(&options, options.scan_count, MAX_PORT);
-    for(int i = 0; i < options.ip_count; i++){
+    if(options.speedup != 0){
+        int i = 0;
         handle_ip_option_in_file(&i, &options);
         int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
         options.local_ip = get_local_ip(use_loopback);
         options.local_interface = get_local_interface(use_loopback);
-        // Effectuer le scan
-        print_starting_message();
-        tcp_scan_all_ports(&options);
-        // Afficher les ports, en excluant ceux dans l'état "CLOSED"
+        run_scans_by_techniques(&options);
         print_ports_excluding_state(&options, "CLOSED");
         printf("\n");
-        reset_status(&options, options.scan_count, MAX_PORT);
+    }
+    else {
+        for(int i = 0; i < options.ip_count; i++){
+            handle_ip_option_in_file(&i, &options);
+            int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
+            options.local_ip = get_local_ip(use_loopback);
+            options.local_interface = get_local_interface(use_loopback);
+            // Effectuer le scan
+            print_starting_message();
+            tcp_scan_all_ports(&options);
+            // Afficher les ports, en excluant ceux dans l'état "CLOSED"
+            print_ports_excluding_state(&options, "CLOSED");
+            printf("\n");
+            reset_status(&options, options.scan_count, MAX_PORT);
+        }
     }
 
     // Libérer la mémoire

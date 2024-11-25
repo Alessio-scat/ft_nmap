@@ -74,6 +74,17 @@ typedef struct {
     int port_status;      // Statut du port (ouvert, fermé, filtré)
 } pcap_data_t;
 
+typedef struct {
+    int thread_id;            // ID du thread
+    int scan_type;            // Type de scan (ex: SYN, NULL, etc.)
+    int currentScan;          // Scan courant pour ce thread
+    ScanOptions *options;     // Options globales
+    int sock;                 // Socket brut partagé
+    pcap_t *handle;           // Handle pcap partagé
+} ScanThreadData;
+
+
+
 /*
     parsing.c
 */
@@ -87,6 +98,8 @@ void udp_scan_all_ports(ScanOptions *options);
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
 void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest);
 void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+pcap_t *init_pcap(const char *interface);
+void wait_for_responses(pcap_t *handle, ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);
@@ -104,6 +117,9 @@ const char* get_scan_name(int scan_code);
 void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options);
 void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
 int create_raw_socket();
+
+//thread
+void run_scans_by_techniques(ScanOptions *options);
 
 
 #endif
