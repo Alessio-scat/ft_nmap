@@ -53,15 +53,25 @@ int create_udp_socket() {
 */
 
 void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    printf("Paquet capturé de longueur : %d\n", pkthdr->len);
+    // printf("Paquet capturé de longueur : %d\n", pkthdr->len);
+    (void)pkthdr;
     ScanOptions *options = (ScanOptions *)user_data;
 
     struct iphdr *iph = (struct iphdr *)(packet + 14);  // En-tête IP après l'en-tête Ethernet
     printf("Protocole IP détecté : %d\n", iph->protocol);
 
+    // struct in_addr source_addr;
+    // source_addr.s_addr = iph->saddr;
+    
+    // if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
+    //     // Ignorer les paquets provenant d'autres IPs
+    //     printf("HELLLOOOOO\n");
+    //     return;
+    // }
+
     // Cas des paquets ICMP
     if (iph->protocol == IPPROTO_ICMP) {
-        printf("Paquet ICMP détecté\n");
+        // printf("Paquet ICMP détecté\n");
         struct icmphdr *icmph = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
 
         // Extraire les informations du paquet ICMP pour obtenir le port cible
@@ -70,18 +80,18 @@ void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, con
         struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
         int port = ntohs(udph->dest);
 
-        printf("ICMP type: %d, code: %d\n", icmph->type, icmph->code);
+        // printf("ICMP type: %d, code: %d\n", icmph->type, icmph->code);
         if (icmph->type == 3) {
             switch (icmph->code) {
                 case 3:  // ICMP port unreachable
-                    printf("ICMP Port Unreachable reçu pour le port : %d\n", port);
+                    // printf("ICMP Port Unreachable reçu pour le port : %d\n", port);
                     if (port > 0 && port <= MAX_PORT) {
                         strcpy(options->status[0][port - 1], "CLOSED");
                     }
                     break;
 
                 case 1: case 2: case 9: case 10: case 13:  // Autres erreurs ICMP "Unreachable"
-                    printf("ICMP 'Unreachable' filtré reçu pour le port : %d\n", port);
+                    // printf("ICMP 'Unreachable' filtré reçu pour le port : %d\n", port);
                     if (port > 0 && port <= MAX_PORT) {
                         strcpy(options->status[0][port - 1], "FILTERED");
                     }
@@ -107,8 +117,9 @@ void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, con
     }
 }
 
-pcap_t *init_pcap_udp(const char *interface) {
+pcap_t *init_pcap_udp(const char *interface, ScanOptions *options) {
     char errbuf[PCAP_ERRBUF_SIZE];
+    (void)options;
     pcap_t *handle;
 
     if (getuid() != 0) {
@@ -143,23 +154,6 @@ pcap_t *init_pcap_udp(const char *interface) {
     return handle;
 }
 
-// void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
-//     global_handle_udp = handle;
-
-//     // Définir un timeout (exemple: 15 secondes)
-//     signal(SIGALRM, timeout_handler_udp);
-//     alarm(5);  // Timeout de 15 secondes
-
-//     // Capture des paquets en boucle jusqu'à expiration du délai
-//     while (!stop_pcap_udp) {
-//         printf("cdcdcdcdc\n");
-//         pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
-//     }
-
-//     // Réinitialiser et fermer pcap
-//     alarm(5);
-//     global_handle_udp = NULL;
-// }
 void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
     global_handle_udp = handle;
 
@@ -169,17 +163,13 @@ void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
 
     int res;
     while (!stop_pcap_udp) {
-        printf("Attente de paquets...\n");  // Log supplémentaire
+        // printf("Attente de paquets...\n");  // Log supplémentaire
 
         res = pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
         
         if (res == -1) {
             fprintf(stderr, "Erreur dans pcap_dispatch : %s\n", pcap_geterr(handle));
             break;
-        } else if (res == 0) {
-            printf("Aucun paquet capturé dans ce cycle...\n");  // Aucun paquet capturé
-        } else {
-            printf("Nombre de paquets capturés : %d\n", res);  // Nombre de paquets capturés
         }
     }
 
@@ -192,7 +182,7 @@ void udp_scan_all_ports(ScanOptions *options) {
     int sock = create_udp_socket();
     struct sockaddr_in dest;
     char packet[4096];  // Buffer pour le paquet
-    pcap_t *handle = init_pcap_udp(options->local_interface);
+    pcap_t *handle = init_pcap_udp(options->local_interface, options);
 
     // Configurer l'adresse de destination
     dest.sin_family = AF_INET;
