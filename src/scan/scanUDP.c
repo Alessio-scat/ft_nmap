@@ -53,11 +53,19 @@ int create_udp_socket() {
 */
 
 void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    printf("Paquet capturé de longueur : %d\n", pkthdr->len);
+    // printf("Paquet capturé de longueur : %d\n", pkthdr->len);
+    (void)pkthdr;
     ScanOptions *options = (ScanOptions *)user_data;
 
     struct iphdr *iph = (struct iphdr *)(packet + 14);  // En-tête IP après l'en-tête Ethernet
     printf("Protocole IP détecté : %d\n", iph->protocol);
+    struct in_addr source_addr;
+    source_addr.s_addr = iph->saddr;
+    
+    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
+        // Ignorer les paquets provenant d'autres IPs
+        return;
+    }
 
     // Cas des paquets ICMP
     if (iph->protocol == IPPROTO_ICMP) {
@@ -96,12 +104,11 @@ void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, con
     // Cas des paquets UDP - Si une réponse UDP valide est capturée, marquer le port comme "OPEN"
     else if (iph->protocol == IPPROTO_UDP) {
         struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
-        int port = ntohs(udph->dest);  // Utilise le port source de la réponse UDP pour identifier le port cible scanné
+        int port = ntohs(udph->source);  // Utilise le port source de la réponse UDP pour identifier le port cible scanné
         printf("Réponse UDP détectée pour le port : %d\n", port);
 
         // Mettre à jour le statut du port en "OPEN" si réponse UDP reçue
         if (port > 0 && port <= MAX_PORT) {
-            printf("HELOOOO\n");
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
         }
     }
@@ -169,17 +176,12 @@ void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
 
     int res;
     while (!stop_pcap_udp) {
-        printf("Attente de paquets...\n");  // Log supplémentaire
 
         res = pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
         
         if (res == -1) {
             fprintf(stderr, "Erreur dans pcap_dispatch : %s\n", pcap_geterr(handle));
             break;
-        } else if (res == 0) {
-            printf("Aucun paquet capturé dans ce cycle...\n");  // Aucun paquet capturé
-        } else {
-            printf("Nombre de paquets capturés : %d\n", res);  // Nombre de paquets capturés
         }
     }
 
