@@ -67,3 +67,30 @@ void handle_ip_option(int *i, int ac, char **av, ScanOptions *options) {
         exit(1);
     }
 }
+
+void handle_ip_option_in_file(int ip_index, ScanOptions *options) {
+    if (ip_index >= 0 && ip_index < options->ip_count) {
+        // Récupère l'IP à partir du tableau ip_list en fonction de ip_index
+        char *selected_ip = options->ip_list[ip_index];
+        options->ip_host = strdup(selected_ip); // Stocke l'IP ou le nom d'hôte
+
+        // Vérifie si l'entrée est une adresse IP valide
+        struct sockaddr_in sa;
+        if (inet_pton(AF_INET, selected_ip, &(sa.sin_addr)) == 1) {
+            // Si c'est une IP valide, l'utiliser directement
+            options->ip_address = strdup(selected_ip);
+        } else {
+            // Sinon, essayer de résoudre le nom de domaine
+            options->ip_address = resolve_hostname_to_ip(selected_ip);
+        }
+
+        if (options->ip_address == NULL) {
+            fprintf(stderr, "Error: Unable to resolve IP address for %s\n", selected_ip);
+            exit(1);
+        }
+    } else {
+        fprintf(stderr, "Error: Invalid IP index (%d). Must be between 0 and %d.\n", ip_index, options->ip_count - 1);
+        exit(1);
+    }
+}
+

@@ -80,6 +80,7 @@ typedef struct {
     parsing.c
 */
 void parse_arguments(int ac, char **av, ScanOptions *options);
+void handle_ip_option_in_file(int ip_index, ScanOptions *options);
 
 //scan
 void tcp_scan_all_ports(ScanOptions *options);
