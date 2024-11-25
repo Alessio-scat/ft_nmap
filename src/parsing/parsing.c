@@ -51,7 +51,8 @@ void parse_arguments(int ac, char **av, ScanOptions *options) {
         options->tabscan[2] = FIN;
         options->tabscan[3] = XMAS;
         options->tabscan[4] = ACK;
-        options->scan_count = 5;
+         options->tabscan[5] = UDP;
+        options->scan_count = 6;
     }
 
     // Minimal validation to ensure either IP or file is specified

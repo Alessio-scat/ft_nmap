@@ -70,7 +70,10 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
         for (int i = 0; i < options->portsTabSize; i++) {
             if (strcmp(options->status[technique][i], excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)) {
                 const char *service_name = get_service_name(options->portsTab[i]);
-                printf("%d/tcp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
+                if(scan_type == 6)
+                    printf("%d/udp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
+                else
+                    printf("%d/tcp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
             }
         }
     }
