@@ -12,16 +12,24 @@ const char *get_service_name(int port) {
     return "unknown";  // Si le port n'est pas dans la liste
 }
 
+void print_os_detection(ScanOptions *options){
+    if(options->OS == 1){
+        if(options->ttl == 0){
+            printf("No exact OS matches for host\n");
+        } else if (options->ttl <= 64) {
+            printf("OS details: Linux ou Unix\n");
+        } else if (options->ttl <= 128) {
+            printf("OS details: Windows\n");
+        }
+        else
+            printf("No exact OS matches for host\n");
+    }
+}
+
 void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
     printf("Nmap scan report for %s (%s)\n", options->ip_host, options->ip_address);
     int total_ports = options->portsTabSize;
-    if (options->ttl <= 64) {
-        printf("OS details: Linux ou Unix\n");
-    } else if (options->ttl <= 128) {
-        printf("OS details: Windows\n");
-    }
-    else
-        printf("No exact OS matches for host\n");
+    print_os_detection(options);
     // Boucle sur chaque technique de scan dans l'ordre
     for (int technique = 0; technique < options->scan_count; technique++) {
         int scan_type = options->tabscan[technique];
@@ -62,7 +70,10 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
         for (int i = 0; i < options->portsTabSize; i++) {
             if (strcmp(options->status[technique][i], excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)) {
                 const char *service_name = get_service_name(options->portsTab[i]);
-                printf("%d/tcp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
+                if(scan_type == 6)
+                    printf("%d/udp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
+                else
+                    printf("%d/tcp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
             }
         }
     }

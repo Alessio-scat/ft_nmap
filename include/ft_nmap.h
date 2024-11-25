@@ -19,6 +19,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/udp.h>
 
 #define MAX_PORT 1024
 #define PORT_OPEN 1
@@ -56,6 +57,7 @@ typedef struct {
     int tabscan[MAX_SCANS];
     int currentScan;
     int ttl;
+    int OS;
 } ScanOptions;
 
 typedef struct {
@@ -81,6 +83,7 @@ void parse_arguments(int ac, char **av, ScanOptions *options);
 
 //scan
 void tcp_scan_all_ports(ScanOptions *options);
+void udp_scan_all_ports(ScanOptions *options);
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
 void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest);
 void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);

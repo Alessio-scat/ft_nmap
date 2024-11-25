@@ -115,7 +115,11 @@ void tcp_scan_all_ports(ScanOptions *options) {
         stop_pcap = false;
         options->currentScan = i;
         options->scan_type = options->tabscan[i];
-
+        printf("%d\n", options->scan_type);
+        if(options->scan_type == 6){
+            udp_scan_all_ports(options);
+        }
+        else {
         // Envoyer les paquets pour le type de scan actuel
         send_all_packets(sock, packet, iph, &dest, options);
 
@@ -124,6 +128,7 @@ void tcp_scan_all_ports(ScanOptions *options) {
 
         // Optionnel : ajouter un délai court entre les scans pour éviter les interférences
         sleep(1);
+        }
     }
 
     // Fermer le socket brut et pcap après tous les scans

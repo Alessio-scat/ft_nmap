@@ -1,5 +1,14 @@
 #include "ft_nmap.h"
 
+void os_detection(const struct iphdr *iph, ScanOptions *options){
+    if(options->OS == 1)
+    {
+        if (options->ttl == 0) {
+            options->ttl = iph->ttl;
+        }
+    }
+}
+
 void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct icmphdr *icmp_header = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
     printf("ICMP\n");
@@ -30,12 +39,17 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         return; // Ignorer les ports hors limites
     }
 
+    // Vérifier si le port a déjà un statut final (ex. CLOSED)
+    if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
+        strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
+        strcmp(options->status[options->currentScan][port - 1], "UNFILTERED") == 0) {
+        return; // Ne pas modifier un port qui a déjà un statut final
+    }
+
     // Traitement en fonction du type de scan
     if (options->scan_type == SYN) {  // Scan SYN
         if (tcph->syn == 1 && tcph->ack == 1) {
-            if (options->ttl == 0) {
-                options->ttl = iph->ttl;
-            }
+            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
         } else if (tcph->rst == 1) {
             strcpy(options->status[options->currentScan][port - 1], "CLOSED");
@@ -44,12 +58,14 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         if (tcph->rst == 1) {
             strcpy(options->status[options->currentScan][port - 1], "CLOSED");
         } else {
+            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "OPEN|FILTERED");
         }
     } else if (options->scan_type == ACK) {  // Scan ACK
         if (tcph->rst == 1) {
             strcpy(options->status[options->currentScan][port - 1], "UNFILTERED");
         } else {
+            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "FILTERED");
         }
     }
