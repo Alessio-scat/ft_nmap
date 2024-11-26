@@ -66,14 +66,22 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
             }
         }
         printf("PORT    SERVICE         STATE\n");
-        // Afficher les ports pour ce type de scan
+
+        // Parcourir les ports définis dans portsTab
         for (int i = 0; i < options->portsTabSize; i++) {
-            if (strcmp(options->status[technique][i], excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)) {
-                const char *service_name = get_service_name(options->portsTab[i]);
-                if(scan_type == 6)
-                    printf("%d/udp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
-                else
-                    printf("%d/tcp    %-15s  %s\n", options->portsTab[i], service_name, options->status[technique][options->portsTab[i] - 1]);
+            int port = options->portsTab[i];
+            const char *port_status = options->status[technique][port - 1]; // Statut du port (via index)
+
+            // Vérifier si le port doit être affiché
+            if (strcmp(port_status, excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)) {
+                const char *service_name = get_service_name(port);
+
+                // Afficher les informations du port
+                if (scan_type == 6) { // UDP
+                    printf("%d/udp    %-15s  %s\n", port, service_name, port_status);
+                } else { // TCP
+                    printf("%d/tcp    %-15s  %s\n", port, service_name, port_status);
+                }
             }
         }
     }

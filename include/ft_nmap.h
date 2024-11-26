@@ -74,16 +74,12 @@ typedef struct {
 
 typedef struct {
     int thread_id;            // ID du thread
-    int scan_type;            // Type de scan (ex: SYN, NULL, etc.)
-    int currentScan;          // Scan courant pour ce thread
     ScanOptions *options;     // Options globales
-    int sock;                 // Socket brut partagé
-    pcap_t *handle;           // Handle pcap partagé
-    char packet[4096];        // Buffer pour le paquet
-    struct iphdr *iph;        // Pointeur vers l'en-tête IP
-    struct sockaddr_in dest;  // Structure de destination
+    int start_port;           // Premier port pour ce thread
+    int end_port;             // Dernier port pour ce thread
+    int start_scan;           // Première technique pour ce thread
+    int end_scan;             // Dernière technique pour ce thread
 } ScanThreadData;
-
 
 
 
@@ -97,6 +93,7 @@ void handle_ip_option_in_file(int *ip_index, ScanOptions *options);
 //scan
 void tcp_scan_all_ports(ScanOptions *options);
 void udp_scan_all_ports(ScanOptions *options);
+void *tcp_scan_all_ports_thread(void *arg);
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
 void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest);
 void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);

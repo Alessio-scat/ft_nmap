@@ -11,7 +11,7 @@ void os_detection(const struct iphdr *iph, ScanOptions *options){
 
 void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct icmphdr *icmp_header = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
-    printf("ICMP\n");
+    // printf("ICMP\n");
 
     if (options->scan_type == SCAN_NULL || options->scan_type == FIN || options->scan_type == XMAS) {
         // Vérifier le type et le code ICMP pour déterminer si le port est filtré
@@ -38,6 +38,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         return; // Ignorer les ports hors limites
     }
 
+    printf("passe\n");
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
