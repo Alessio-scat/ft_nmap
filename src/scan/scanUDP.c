@@ -201,7 +201,7 @@ void udp_scan_all_ports(ScanOptions *options) {
     struct sockaddr_in dest;
     char packet[4096];  // Buffer pour le paquet
     pcap_t *handle = init_pcap_udp(options->local_interface);
-
+    
     // Configurer l'adresse de destination
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);

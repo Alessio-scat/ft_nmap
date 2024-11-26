@@ -35,8 +35,6 @@
 
 #define MAX_SCANS 6
 
-
-
 typedef struct {
     char *ip_address;
     char *ip_host;
@@ -81,7 +79,11 @@ typedef struct {
     ScanOptions *options;     // Options globales
     int sock;                 // Socket brut partagé
     pcap_t *handle;           // Handle pcap partagé
+    char packet[4096];        // Buffer pour le paquet
+    struct iphdr *iph;        // Pointeur vers l'en-tête IP
+    struct sockaddr_in dest;  // Structure de destination
 } ScanThreadData;
+
 
 
 

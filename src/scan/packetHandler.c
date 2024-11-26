@@ -44,7 +44,6 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         strcmp(options->status[options->currentScan][port - 1], "UNFILTERED") == 0) {
         return; // Ne pas modifier un port qui a déjà un statut final
     }
-
     // Traitement en fonction du type de scan
     if (options->scan_type == SYN) {  // Scan SYN
         if (tcph->syn == 1 && tcph->ack == 1) {
@@ -68,7 +67,6 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
             strcpy(options->status[options->currentScan][port - 1], "FILTERED");
         }
     }
-    printf("yoooooooooooooooo\n");
 }
 
 // Fonction principale de gestion des paquets

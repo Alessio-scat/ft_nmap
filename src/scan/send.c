@@ -31,7 +31,6 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
 }
 
 void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options) {
-
     for (int j = 0; j < options->portsTabSize; j++) {
         int target_port = options->portsTab[j];
         // printf("%d\n", options->portsTabSize);
