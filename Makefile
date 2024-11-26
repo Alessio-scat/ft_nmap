@@ -22,6 +22,7 @@ SRC			 			= main.c \
 							scan/packetHandler.c \
 							scan/build.c \
 							scan/send.c \
+							threads/threads.c \
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	
