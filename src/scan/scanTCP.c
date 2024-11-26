@@ -1,7 +1,7 @@
 #include "ft_nmap.h"
 
 pcap_t *global_handle = NULL;
-bool stop_pcap = false;
+volatile bool stop_pcap = false;
 
 void timeout_handler(int signum) {
     if (signum == SIGALRM) {
@@ -75,7 +75,7 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     // Définir un timeout (exemple: 15 secondes)
     signal(SIGALRM, timeout_handler);
     alarm(5);  // Timeout de 15 secondes
-
+    printf("ici\n");
     // Capture des paquets en boucle jusqu'à expiration du délai
     while (!stop_pcap) {
         pcap_dispatch(handle, -1, packet_handler, (u_char *)options);

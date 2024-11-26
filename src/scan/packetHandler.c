@@ -38,7 +38,6 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         return; // Ignorer les ports hors limites
     }
 
-    printf("passe\n");
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
@@ -49,6 +48,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     if (options->scan_type == SYN) {  // Scan SYN
         if (tcph->syn == 1 && tcph->ack == 1) {
             os_detection(iph, options);
+            printf("passe\n");
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
         } else if (tcph->rst == 1) {
             strcpy(options->status[options->currentScan][port - 1], "CLOSED");

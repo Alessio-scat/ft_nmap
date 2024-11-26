@@ -21,6 +21,9 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
 
+extern volatile bool stop_pcap;
+
+
 #define MAX_PORT 1024
 #define PORT_OPEN 1
 #define PORT_CLOSED 0
