@@ -53,49 +53,37 @@ int create_udp_socket() {
 */
 
 void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    // printf("Paquet capturé de longueur : %d\n", pkthdr->len);
     (void)pkthdr;
     ScanOptions *options = (ScanOptions *)user_data;
 
     struct iphdr *iph = (struct iphdr *)(packet + 14);  // En-tête IP après l'en-tête Ethernet
-    printf("Protocole IP détecté : %d\n", iph->protocol);
     struct in_addr source_addr;
     source_addr.s_addr = iph->saddr;
     
 
-    printf("%s  -----  %s\n", inet_ntoa(source_addr), options->ip_address);
-    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
-        // Ignorer les paquets provenant d'autres IPs
-        printf("Réponse ignorée, source : %s\n", inet_ntoa(source_addr));
+    // Ignorer les paquets provenant d'autres IPs
+    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0)
         return;
-    }
 
     // Cas des paquets ICMP
     if (iph->protocol == IPPROTO_ICMP) {
-        printf("Paquet ICMP détecté\n");
         struct icmphdr *icmph = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
 
-        // Extraire les informations du paquet ICMP pour obtenir le port cible
         struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
         int inner_ip_header_length = inner_iph->ihl * 4;
         struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
         int port = ntohs(udph->dest);
 
-        printf("ICMP type: %d, code: %d\n", icmph->type, icmph->code);
         if (icmph->type == 3) {
             switch (icmph->code) {
                 case 3:  // ICMP port unreachable
-                    printf("ICMP Port Unreachable reçu pour le port : %d\n", port);
-                    if (port > 0 && port <= MAX_PORT) {
+                    if (port > 0 && port <= MAX_PORT)
                         strcpy(options->status[options->currentScan][port - 1], "CLOSED");
-                    }
                     break;
 
                 case 1: case 2: case 9: case 10: case 13:  // Autres erreurs ICMP "Unreachable"
-                    printf("ICMP 'Unreachable' filtré reçu pour le port : %d\n", port);
-                    if (port > 0 && port <= MAX_PORT) {
+                    if (port > 0 && port <= MAX_PORT)
                         strcpy(options->status[options->currentScan][port - 1], "FILTERED");
-                    }
                     break;
 
                 default:
@@ -104,16 +92,12 @@ void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, con
             }
         }
     }
-    // Cas des paquets UDP - Si une réponse UDP valide est capturée, marquer le port comme "OPEN"
     else if (iph->protocol == IPPROTO_UDP) {
         struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
-        int port = ntohs(udph->source);  // Utilise le port source de la réponse UDP pour identifier le port cible scanné
-        printf("Réponse UDP détectée pour le port : %d\n", port);
+        int port = ntohs(udph->source); 
 
-        // Mettre à jour le statut du port en "OPEN" si réponse UDP reçue
-        if (port > 0 && port <= MAX_PORT) {
+        if (port > 0 && port <= MAX_PORT)
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
-        }
     }
 }
 
