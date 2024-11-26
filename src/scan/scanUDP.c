@@ -62,8 +62,11 @@ void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, con
     struct in_addr source_addr;
     source_addr.s_addr = iph->saddr;
     
+
+    printf("%s  -----  %s\n", inet_ntoa(source_addr), options->ip_address);
     if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
         // Ignorer les paquets provenant d'autres IPs
+        printf("Réponse ignorée, source : %s\n", inet_ntoa(source_addr));
         return;
     }
 
@@ -150,23 +153,6 @@ pcap_t *init_pcap_udp(const char *interface) {
     return handle;
 }
 
-// void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
-//     global_handle_udp = handle;
-
-//     // Définir un timeout (exemple: 15 secondes)
-//     signal(SIGALRM, timeout_handler_udp);
-//     alarm(5);  // Timeout de 15 secondes
-
-//     // Capture des paquets en boucle jusqu'à expiration du délai
-//     while (!stop_pcap_udp) {
-//         printf("cdcdcdcdc\n");
-//         pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
-//     }
-
-//     // Réinitialiser et fermer pcap
-//     alarm(5);
-//     global_handle_udp = NULL;
-// }
 void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
     global_handle_udp = handle;
 
