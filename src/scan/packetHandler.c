@@ -37,7 +37,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     if (port <= 0 || port > MAX_PORT) {
         return; // Ignorer les ports hors limites
     }
-
+    
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
@@ -62,8 +62,10 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         }
     } else if (options->scan_type == ACK) {  // Scan ACK
         if (tcph->rst == 1) {
+            // printf("unfiltred %d\n", port);
             strcpy(options->status[options->currentScan][port - 1], "UNFILTERED");
         } else {
+            // printf("filtred %d\n", port);
             os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "FILTERED");
         }
@@ -82,7 +84,6 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
     // Vérifier si le paquet provient de l'IP cible
     struct in_addr source_addr;
     source_addr.s_addr = iph->saddr;
-    
     if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
         // Ignorer les paquets provenant d'autres IPs
         return;
@@ -99,5 +100,5 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
     }
 
     // Mettre une alarme ou un délai si nécessaire
-    alarm(2);
+    alarm(5);
 }

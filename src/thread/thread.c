@@ -28,7 +28,7 @@ void *threaded_scan(void *arg) {
     build_ip_header(iph, &dest, options);
 
     // Boucle sur les scans assignés
-    pthread_mutex_lock(&mutex);
+    // pthread_mutex_lock(&mutex);
     if (data->start_scan == data->end_scan) {
     int scan = data->start_scan;
     options->currentScan = scan;
@@ -37,8 +37,8 @@ void *threaded_scan(void *arg) {
     printf("Thread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
 
     // Boucle sur les ports
-    for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
         stop_pcap = false;
+    for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
         int target_port = options->portsTab[port_idx];
         dest.sin_port = htons(target_port);
 
@@ -58,16 +58,16 @@ void *threaded_scan(void *arg) {
             printf("Thread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
 
             // Boucle sur les ports
-            for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
-                
                 stop_pcap = false;
+            for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
+                printf("yo\n");
                 int target_port = options->portsTab[port_idx];
                 dest.sin_port = htons(target_port);
 
                 // Construire et envoyer le paquet
                 build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
                 send_packet(sock, packet, iph, &dest);
-                usleep(1000); // Délai pour éviter la saturation réseau
+                // usleep(1000); // Délai pour éviter la saturation réseau
                 
             }
 
@@ -82,7 +82,7 @@ void *threaded_scan(void *arg) {
     // Libération des ressources locales
     close(sock);
     pcap_close(handle);
-    pthread_mutex_unlock(&mutex);
+    // pthread_mutex_unlock(&mutex);
 
     printf("Thread %d: Finished all scans.\n", data->thread_id);
     pthread_exit(NULL);
