@@ -35,7 +35,7 @@
 
 #define MAX_SCANS 6
 
-
+extern bool stop_pcap;
 
 typedef struct {
     char *ip_address;
@@ -103,6 +103,9 @@ const char* get_scan_name(int scan_code);
 void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options);
 void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
 int create_raw_socket();
+
+//scanTcp
+pcap_t *init_pcap(const char *interface);
 
 
 #endif

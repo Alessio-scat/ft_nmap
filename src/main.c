@@ -1,4 +1,7 @@
 #include "../include/ft_nmap.h"
+#include "../include/threads.h"
+
+bool stop_pcap = false;
 
 void print_starting_message() {
     time_t now;
@@ -79,7 +82,12 @@ int main(int ac, char **av) {
 
     // Effectuer le scan
     print_starting_message();
-    tcp_scan_all_ports(&options);
+    if (options.speedup){
+        printf("Je passe\n");
+        init_threads(&options);
+    }
+    else
+        tcp_scan_all_ports(&options);
 
     // Afficher les ports, en excluant ceux dans l'état "CLOSED"
     print_ports_excluding_state(&options, "CLOSED");

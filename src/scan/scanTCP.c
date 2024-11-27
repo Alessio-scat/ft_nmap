@@ -1,7 +1,7 @@
 #include "ft_nmap.h"
 
 pcap_t *global_handle = NULL;
-bool stop_pcap = false;
+// bool stop_pcap = false;
 
 void timeout_handler(int signum) {
     if (signum == SIGALRM) {
