@@ -16,6 +16,7 @@ typedef struct {
     int end_port;    // Port de fin
 } ThreadData;
 
+
 void init_threads(ScanOptions *options);
 void wait_for_responses(pcap_t *handle, ScanOptions *options);
 

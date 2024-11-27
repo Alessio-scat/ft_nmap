@@ -34,6 +34,7 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
 void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);
     int port = ntohs(tcph->source);
+    printf("ya zebi %d\n", port);
 
     if (port <= 0 || port > MAX_PORT) {
         return; // Ignorer les ports hors limites
@@ -50,6 +51,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     if (options->scan_type == SYN) {  // Scan SYN
         if (tcph->syn == 1 && tcph->ack == 1) {
             os_detection(iph, options);
+            printf("OPENNNNNNNNNNNNNNN\n");
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
         } else if (tcph->rst == 1) {
             strcpy(options->status[options->currentScan][port - 1], "CLOSED");
@@ -74,7 +76,6 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
 // Fonction principale de gestion des paquets
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     (void)pkthdr;
-
     // Récupération des données utilisateur (ScanOptions)
     ScanOptions *options = (ScanOptions *)user_data;
 
@@ -85,11 +86,12 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
     struct in_addr source_addr;
     source_addr.s_addr = iph->saddr;
     
+    // printf("WWWWWW %d ====== %s\n", inet_ntoa(source_addr), options->ip_address);
     if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
         // Ignorer les paquets provenant d'autres IPs
         return;
     }
-
+    printf("PPPPPPP\n");
     // Gérer le TTL de la cible si nécessaire
     
 

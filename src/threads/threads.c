@@ -23,6 +23,7 @@ void *thread_worker(void *arg) {
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
+    printf("IP ADRESS -- %s\n", options->ip_address);
 
     // Construire l'en-tête IP une fois
     build_ip_header(iph, &dest, options);
@@ -34,6 +35,9 @@ void *thread_worker(void *arg) {
 
         int port = options->portsTab[port_index];
         int scan_type = options->tabscan[technique_index];
+        options->currentScan = scan_type - 1;
+        printf("current scan : %d\n", options->currentScan);
+        dest.sin_port = htons(port);
 
         printf("Thread %d scanning port %d with technique %s\n",
                data->thread_id, port, get_scan_name(scan_type));
@@ -45,6 +49,7 @@ void *thread_worker(void *arg) {
         if (scan_type == UDP) {
             udp_scan_all_ports(options);
         } else {
+            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
             send_packet(sock, packet, iph, &dest);
             wait_for_responses(handle, options);
         }
@@ -64,7 +69,7 @@ void init_threads(ScanOptions *options) {
         fprintf(stderr, "Error: Speedup must be greater than 0.\n");
         exit(EXIT_FAILURE);
     }
-
+     printf("IP ADRESS22222 -- %s\n", options->ip_address);
     pthread_t threads[total_threads];       // Tableau pour stocker les threads
     ThreadData thread_data[total_threads];  // Données pour chaque thread
 
@@ -91,4 +96,3 @@ void init_threads(ScanOptions *options) {
 
     printf("All scans completed.\n");
 }
-
