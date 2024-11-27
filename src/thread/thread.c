@@ -29,32 +29,54 @@ void *threaded_scan(void *arg) {
 
     // Boucle sur les scans assignés
     pthread_mutex_lock(&mutex);
-    for (int scan = data->start_scan; scan < data->end_scan; scan++) {
-        // Synchronisation pour les modifications partagées
-        options->currentScan = scan;
-        options->scan_type = options->tabscan[scan];
-        
-        printf("Thread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
+    if (data->start_scan == data->end_scan) {
+    int scan = data->start_scan;
+    options->currentScan = scan;
+    options->scan_type = options->tabscan[scan];
 
-        // Boucle sur les ports
-        for (int port_idx = 0; port_idx < options->portsTabSize; port_idx++) {
-            
-            stop_pcap = false;
-            int target_port = options->portsTab[port_idx];
-            dest.sin_port = htons(target_port);
+    printf("Thread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
 
-            // Construire et envoyer le paquet
-            build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
-            send_packet(sock, packet, iph, &dest);
-            usleep(1000); // Délai pour éviter la saturation réseau
+    // Boucle sur les ports
+    for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
+        stop_pcap = false;
+        int target_port = options->portsTab[port_idx];
+        dest.sin_port = htons(target_port);
+
+        build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
+        send_packet(sock, packet, iph, &dest);
+        usleep(1000);
+    }
+
+    wait_for_responses(handle, options);
+    printf("Thread %d: Finished scan %d\n", data->thread_id, scan);
+    } else {
+        for (int scan = data->start_scan; scan < data->end_scan; scan++) {
+            // Synchronisation pour les modifications partagées
+            options->currentScan = scan;
+            options->scan_type = options->tabscan[scan];
             
+            printf("Thread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
+
+            // Boucle sur les ports
+            for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
+                
+                stop_pcap = false;
+                int target_port = options->portsTab[port_idx];
+                dest.sin_port = htons(target_port);
+
+                // Construire et envoyer le paquet
+                build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
+                send_packet(sock, packet, iph, &dest);
+                usleep(1000); // Délai pour éviter la saturation réseau
+                
+            }
+
+            // Attendre les réponses pour ce scan
+            
+            wait_for_responses(handle, options);
+            sleep(1); // Délai pour éviter les interférences entre scans
+            printf("Thread %d: Finished scan %d\n", data->thread_id, scan);
         }
-
-        // Attendre les réponses pour ce scan
-        
-        wait_for_responses(handle, options);
-        sleep(1); // Délai pour éviter les interférences entre scans
-        printf("Thread %d: Finished scan %d\n", data->thread_id, scan);
     }
 
     // Libération des ressources locales
@@ -68,27 +90,39 @@ void *threaded_scan(void *arg) {
 }
 
 void run_scans_by_techniques(ScanOptions *options) {
-    // Réduire le nombre de threads si supérieur au nombre de scans
-    int num_threads = options->speedup > options->scan_count ? options->scan_count : options->speedup;
+    int num_threads = options->speedup; // Nombre de threads demandé
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
 
-    // Répartition des techniques (scans)
-    int scans_per_thread = options->scan_count / num_threads;
-    int extra_scans = options->scan_count % num_threads;
+    // Total de combinaisons (scans x ports)
+    int total_combinations = options->scan_count * options->portsTabSize;
+    int combinations_per_thread = total_combinations / num_threads;
+    int extra_combinations = total_combinations % num_threads;
 
-    int current_scan = 0;
+    int current_combination = 0;
 
     for (int i = 0; i < num_threads; i++) {
         thread_data[i].thread_id = i;
         thread_data[i].options = options;
 
-        // Répartition des scans
-        thread_data[i].start_scan = current_scan;
-        thread_data[i].end_scan = current_scan + scans_per_thread + (i < extra_scans ? 1 : 0);
-        current_scan = thread_data[i].end_scan;
+        // Calculer les combinaisons (scan, port) pour ce thread
+        int start_combination = current_combination;
+        int end_combination = start_combination + combinations_per_thread + (i < extra_combinations ? 1 : 0);
+        current_combination = end_combination;
 
-        printf("Thread %d: scans [%d, %d)\n", i, thread_data[i].start_scan, thread_data[i].end_scan);
+        // Traduire les combinaisons en scans et ports
+        thread_data[i].start_scan = start_combination / options->portsTabSize;
+        thread_data[i].end_scan = end_combination / options->portsTabSize;
+        thread_data[i].start_port = start_combination % options->portsTabSize;
+        thread_data[i].end_port = end_combination % options->portsTabSize;
+
+        if (thread_data[i].start_scan != thread_data[i].end_scan) {
+            thread_data[i].end_port = options->portsTabSize; // Ajuste la plage si le scan change
+        }
+
+        printf("Thread %d: scans [%d, %d), ports [%d, %d)\n",
+               i, thread_data[i].start_scan, thread_data[i].end_scan,
+               thread_data[i].start_port, thread_data[i].end_port);
 
         // Créer le thread
         if (pthread_create(&threads[i], NULL, threaded_scan, &thread_data[i]) != 0) {

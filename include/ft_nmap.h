@@ -76,12 +76,12 @@ typedef struct {
 } pcap_data_t;
 
 typedef struct {
-    int thread_id;            // ID du thread
-    ScanOptions *options;     // Options globales
-    int start_port;           // Premier port pour ce thread
-    int end_port;             // Dernier port pour ce thread
-    int start_scan;           // Première technique pour ce thread
-    int end_scan;             // Dernière technique pour ce thread
+    int thread_id;
+    ScanOptions *options;
+    int start_scan;  // Index du scan (type) de départ
+    int end_scan;    // Index du scan (type) de fin
+    int start_port;  // Port de départ
+    int end_port;    // Port de fin
 } ScanThreadData;
 
 
