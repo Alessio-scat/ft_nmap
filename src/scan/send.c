@@ -1,5 +1,7 @@
 #include "ft_nmap.h"
 
+
+
 void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));
 
@@ -25,6 +27,7 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     // printf("Envoi d'un paquet SYN vers %s:%d\n", inet_ntoa(dest->sin_addr), ntohs(tcph->dest));
 
     if (sendto(sock, packet, iph->tot_len, 0, (struct sockaddr *)dest, sizeof(*dest)) < 0) {
+        // print_tcphdr(tcph);
         perror("Échec de l'envoi du paquet");
     }
     free(pseudogram);

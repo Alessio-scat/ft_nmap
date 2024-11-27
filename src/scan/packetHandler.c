@@ -30,6 +30,54 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
     }
 }
 
+
+
+void findCurrent(ScanOptions *options){
+    for(int i = 0; i < options->scan_count; i++){
+        if(options->tabscan[i] == options->scan_type){
+            options->currentScan = i;
+            return;
+        }
+    }
+}
+void print_tcphdr(struct tcphdr *tcph) {
+    printf("===== TCP Header =====\n");
+    printf("Source Port: %u\n", ntohs(tcph->source));
+    printf("Destination Port: %u\n", ntohs(tcph->dest));
+    printf("Sequence Number: %u\n", ntohl(tcph->seq));
+    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));
+    printf("Data Offset: %u (Header Length: %u bytes)\n", tcph->doff, tcph->doff * 4);
+    printf("Flags:\n");
+    printf("  SYN: %d\n", tcph->syn);
+    printf("  ACK: %d\n", tcph->ack);
+    printf("  FIN: %d\n", tcph->fin);
+    printf("  RST: %d\n", tcph->rst);
+    printf("  PSH: %d\n", tcph->psh);
+    printf("  URG: %d\n", tcph->urg);
+    printf("Window Size: %u\n", ntohs(tcph->window));
+    printf("Checksum: 0x%x\n", ntohs(tcph->check));
+    printf("Urgent Pointer: %u\n", ntohs(tcph->urg_ptr));
+    printf("======================\n");
+}
+void findScanType(struct tcphdr *tcph, ScanOptions *options){
+    if (tcph->dest == htons(20000 + SYN)) {
+        options->scan_type = SYN;
+        findCurrent(options);
+    } else if (tcph->dest == htons(20000 + ACK)) {
+        options->scan_type  = ACK;
+        findCurrent(options);
+    } else if (tcph->dest == htons(20000 + FIN)) {
+        options->scan_type = FIN;
+        findCurrent(options);
+    } else if (tcph->dest == htons(20000 + SCAN_NULL)) {
+        options->scan_type = SCAN_NULL;
+        findCurrent(options);
+    } else if (tcph->dest == htons(20000 + XMAS)) {
+        options->scan_type = XMAS;
+        findCurrent(options);
+    }
+}
+
 // Fonction pour traiter les paquets TCP
 void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);
@@ -37,7 +85,10 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     if (port <= 0 || port > MAX_PORT) {
         return; // Ignorer les ports hors limites
     }
-    
+    // print_tcphdr(tcph);
+    findScanType(tcph, options);
+    // printf("passe %d \n", options->scan_type);
+// Ajoutez d'autres vérifications pour les autres techniques.
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
@@ -48,7 +99,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     if (options->scan_type == SYN) {  // Scan SYN
         if (tcph->syn == 1 && tcph->ack == 1) {
             os_detection(iph, options);
-            printf("passe\n");
+        printf("opennnnnnnnnnnnn\n");
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
         } else if (tcph->rst == 1) {
             strcpy(options->status[options->currentScan][port - 1], "CLOSED");
@@ -88,7 +139,6 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
         // Ignorer les paquets provenant d'autres IPs
         return;
     }
-
     // Gérer le TTL de la cible si nécessaire
     
 

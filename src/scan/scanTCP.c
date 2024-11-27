@@ -13,25 +13,25 @@ void timeout_handler(int signum) {
     }
 }
 
-void print_tcphdr(struct tcphdr *tcph) {
-    printf("=== En-tête TCP ===\n");
-    printf("Source Port: %d\n", ntohs(tcph->source));        // Port source
-    printf("Destination Port: %d\n", ntohs(tcph->dest));      // Port destination
-    printf("Sequence Number: %u\n", ntohl(tcph->seq));        // Numéro de séquence
-    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));  // Numéro d'accusé de réception
-    printf("Data Offset: %d\n", tcph->doff * 4);              // Longueur de l'en-tête TCP
-    printf("Flags: \n");
-    printf("   SYN: %d\n", tcph->syn);                        // Flag SYN
-    printf("   ACK: %d\n", tcph->ack);                        // Flag ACK
-    printf("   RST: %d\n", tcph->rst);                        // Flag RST
-    printf("   FIN: %d\n", tcph->fin);                        // Flag FIN
-    printf("   PSH: %d\n", tcph->psh);                        // Flag PSH
-    printf("   URG: %d\n", tcph->urg);                        // Flag URG
-    printf("Window Size: %d\n", ntohs(tcph->window));         // Taille de la fenêtre
-    printf("Checksum: 0x%x\n", ntohs(tcph->check));           // Checksum TCP
-    printf("Urgent Pointer: %d\n", tcph->urg_ptr);            // Pointeur urgent
-    printf("===================\n");
-}
+// void print_tcphdr(struct tcphdr *tcph) {
+//     printf("=== En-tête TCP ===\n");
+//     printf("Source Port: %d\n", ntohs(tcph->source));        // Port source
+//     printf("Destination Port: %d\n", ntohs(tcph->dest));      // Port destination
+//     printf("Sequence Number: %u\n", ntohl(tcph->seq));        // Numéro de séquence
+//     printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));  // Numéro d'accusé de réception
+//     printf("Data Offset: %d\n", tcph->doff * 4);              // Longueur de l'en-tête TCP
+//     printf("Flags: \n");
+//     printf("   SYN: %d\n", tcph->syn);                        // Flag SYN
+//     printf("   ACK: %d\n", tcph->ack);                        // Flag ACK
+//     printf("   RST: %d\n", tcph->rst);                        // Flag RST
+//     printf("   FIN: %d\n", tcph->fin);                        // Flag FIN
+//     printf("   PSH: %d\n", tcph->psh);                        // Flag PSH
+//     printf("   URG: %d\n", tcph->urg);                        // Flag URG
+//     printf("Window Size: %d\n", ntohs(tcph->window));         // Taille de la fenêtre
+//     printf("Checksum: 0x%x\n", ntohs(tcph->check));           // Checksum TCP
+//     printf("Urgent Pointer: %d\n", tcph->urg_ptr);            // Pointeur urgent
+//     printf("===================\n");
+// }
 
 pcap_t *init_pcap(const char *interface) {
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -75,9 +75,10 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     // Définir un timeout (exemple: 15 secondes)
     signal(SIGALRM, timeout_handler);
     alarm(5);  // Timeout de 15 secondes
-    printf("ici\n");
+    // printf("ici\n");
     // Capture des paquets en boucle jusqu'à expiration du délai
     while (!stop_pcap) {
+        // printf("sdfsdfsdfsdfsdfsdf\n");
         pcap_dispatch(handle, -1, packet_handler, (u_char *)options);
     }
     

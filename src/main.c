@@ -91,7 +91,7 @@ int main(int ac, char **av) {
     for (int j = 0; j < options.ip_count; j++)
         free(options.ip_list[j]);
     free(options.ip_list);
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < options.scan_count; i++) {
         for (int j = 0; j < MAX_PORT; j++) {
             if (options.status[i][j] != NULL) {
                 free(options.status[i][j]);

@@ -82,7 +82,13 @@ typedef struct {
     int end_scan;    // Index du scan (type) de fin
     int start_port;  // Port de départ
     int end_port;    // Port de fin
+    int sock;        // Socket pré-initialisé
+    pcap_t *handle;  // Handle pcap pré-initialisé
+    char *packet;    // Buffer de paquet partagé
+    struct iphdr *iph; // Pointeur vers l'en-tête IP
+    struct sockaddr_in dest; // Adresse cible
 } ScanThreadData;
+
 
 
 

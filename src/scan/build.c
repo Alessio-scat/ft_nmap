@@ -29,7 +29,7 @@ void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *o
 
 // Fonction pour construire l'en-tête TCP correctement (seulement le SYN doit être activé)
 void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options) {
-    tcph->source = htons(rand() % 65535 + 1024);  // Port source aléatoire
+    tcph->source = htons(20000 + options->scan_type);  // Port source aléatoire
     tcph->dest = htons(target_port);  // Port cible
     tcph->seq = 0;
     tcph->ack_seq = 0;
