@@ -59,7 +59,7 @@ void *thread_worker(void *arg) {
 
 
 void init_threads(ScanOptions *options) {
-    int total_threads = options->speedup; // Nombre total de threads demandé
+    int total_threads = options->speedup;
     if (total_threads <= 0) {
         fprintf(stderr, "Error: Speedup must be greater than 0.\n");
         exit(EXIT_FAILURE);
