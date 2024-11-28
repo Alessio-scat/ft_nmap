@@ -21,7 +21,7 @@ int validate_ip_or_hostname(char *input) {
 }
 
 // Résoudre un nom de domaine en adresse IP
-char *resolve_hostname_to_ip(const char *hostname) {
+char *resolve_hostname_to_ip(const char *hostname, ScanOptions *options) {
     struct addrinfo hints, *res;
     struct sockaddr_in *ipv4;
     char *ip_address = NULL;
@@ -34,6 +34,7 @@ char *resolve_hostname_to_ip(const char *hostname) {
         ip_address = strdup(inet_ntoa(ipv4->sin_addr));
         freeaddrinfo(res);  // Libérer la mémoire allouée par getaddrinfo
     } else {
+        cleanup_options(options);
         fprintf(stderr, "Error: Unable to resolve hostname: %s\n", hostname);
         exit(1);
     }
@@ -54,15 +55,17 @@ void handle_ip_option(int *i, int ac, char **av, ScanOptions *options) {
             options->ip_address = strdup(input);
         } else {
             // Sinon, essayer de résoudre le nom de domaine
-            options->ip_address = resolve_hostname_to_ip(input);
+            options->ip_address = resolve_hostname_to_ip(input, options);
         }
 
         if (options->ip_address == NULL) {
+            cleanup_options(options);
             fprintf(stderr, "Error: Unable to resolve IP address for %s\n", input);
             exit(1);
         }
         (*i)++;
     } else {
+        cleanup_options(options);
         fprintf(stderr, "Error: --ip option requires an IP address or hostname.\n");
         exit(1);
     }

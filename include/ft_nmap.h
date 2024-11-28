@@ -35,8 +35,6 @@
 
 #define MAX_SCANS 6
 
-extern pcap_t *global_handle;
-
 typedef struct {
     char *ip_address;
     char *ip_host;
@@ -74,6 +72,8 @@ typedef struct {
     int port_status;      // Statut du port (ouvert, fermé, filtré)
 } pcap_data_t;
 
+extern pcap_t *global_handle;
+extern ScanOptions *global_options;
 
 
 /*
@@ -107,5 +107,13 @@ int create_raw_socket();
 int create_udp_socket();
 void build_udp_header_udp(struct udphdr *udph, int target_port);
 void build_ip_header_udp(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+
+//signal
+void signal_handler(int signum);
+
+//free
+void free_nmap(ScanOptions *options);
+
+void cleanup_options(ScanOptions *options);
 
 #endif

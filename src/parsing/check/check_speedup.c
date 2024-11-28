@@ -20,15 +20,18 @@ void handle_speedup_option(int *i, int ac, char **av, ScanOptions *options) {
         if (is_valid_number(av[*i + 1])) {
             options->speedup = atoi(av[*i + 1]);
             if (!validate_speedup(options->speedup)){
+                cleanup_options(options);
                 fprintf(stderr, "Error: --speedup must be between 0 and 250.\n");
                 exit(1);
             }
         } else {
+            cleanup_options(options);
             fprintf(stderr, "Error: --speedup requires a valid number.\n");
             exit(1);
         }
         (*i)++;
     } else {
+        cleanup_options(options);
         fprintf(stderr, "Error: --speedup option requires a number.\n");
         exit(1);
     }

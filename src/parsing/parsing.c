@@ -41,6 +41,7 @@ void parse_arguments(int ac, char **av, ScanOptions *options) {
             options->OS = 1;
         }
         else {
+            cleanup_options(options);
             fprintf(stderr, "Unknown argument: %s\n", av[i]); print_help(); exit(1);
         }
     }

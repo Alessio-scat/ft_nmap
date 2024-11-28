@@ -21,6 +21,8 @@ SRC			 			= main.c \
 							scan/packetHandler.c \
 							scan/build.c \
 							scan/send.c \
+							utils/signal.c \
+							utils/free.c \
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	

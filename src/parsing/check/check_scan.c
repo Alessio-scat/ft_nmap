@@ -26,6 +26,7 @@ void handle_scan_option(int *i, int ac, char **av, ScanOptions *options) {
             (*i)++;
         } 
         else {
+            cleanup_options(options);
             fprintf(stderr, "Error: Invalid scan type: %s\n", av[*i + 1]);
             print_help();
             exit(1);
@@ -33,6 +34,7 @@ void handle_scan_option(int *i, int ac, char **av, ScanOptions *options) {
     }
 
     if (scan_count == 0) {
+        cleanup_options(options);
         fprintf(stderr, "Error: --scan option requires at least one valid scan type.\n");
         exit(1);
     }
