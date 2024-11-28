@@ -84,7 +84,7 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     
 
     // Réinitialiser et fermer pcap
-    alarm(0);
+    // alarm(0);
     global_handle = NULL;
 }
 

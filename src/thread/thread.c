@@ -25,6 +25,7 @@ void *threaded_scan(void *arg) {
     // dest.sin_family = AF_INET;
     // dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
+    pthread_mutex_lock(&mutex);
     // build_ip_header(iph, &dest, options);
     int sock = data->sock;
     // pcap_t *handle = data->handle;
@@ -33,15 +34,13 @@ void *threaded_scan(void *arg) {
     struct sockaddr_in dest = data->dest;
 
     // Boucle sur les scans assignés
-        pthread_mutex_lock(&mutex);
     if (data->start_scan == data->end_scan) {
         int scan = data->start_scan;
         options->currentScan = scan;
         options->scan_type = options->tabscan[scan];
-        printf("Thread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
-
+        printf("TTTTTThread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
         // Boucle sur les ports
-            stop_pcap = false;
+        stop_pcap = false;
         for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
             int target_port = options->portsTab[port_idx];
             dest.sin_port = htons(target_port);
@@ -147,8 +146,17 @@ void run_scans_by_techniques(ScanOptions *options) {
         thread_data[i].start_port = start_combination % options->portsTabSize;
         thread_data[i].end_port = end_combination % options->portsTabSize;
 
+        // Cas particulier pour le premier scan : séparation des ports
+        if (thread_data[i].start_scan == 0 && thread_data[i].end_scan == 1) {
+            int ports_per_thread = options->portsTabSize / (num_threads / options->scan_count);
+            thread_data[i].start_port = (i % (num_threads / options->scan_count)) * ports_per_thread;
+            thread_data[i].end_port = thread_data[i].start_port + ports_per_thread;
+        }
+
+        // Ajuster les ports si le thread couvre une technique entière
         if (thread_data[i].start_scan != thread_data[i].end_scan) {
-            thread_data[i].end_port = options->portsTabSize; // Ajuste la plage si le scan change
+            thread_data[i].start_port = 0;               // Début des ports
+            thread_data[i].end_port = options->portsTabSize; // Fin des ports
         }
 
         printf("Thread %d: scans [%d, %d), ports [%d, %d)\n",
@@ -173,4 +181,6 @@ void run_scans_by_techniques(ScanOptions *options) {
     pcap_close(handle);
     free(packet);
 }
+
+
 

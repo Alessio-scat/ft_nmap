@@ -87,7 +87,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     }
     // print_tcphdr(tcph);
     findScanType(tcph, options);
-    // printf("passe %d \n", options->scan_type);
+    // printf("passe %d %d\n", options->scan_type, port);
 // Ajoutez d'autres vérifications pour les autres techniques.
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
