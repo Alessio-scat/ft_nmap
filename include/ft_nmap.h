@@ -35,7 +35,7 @@
 
 #define MAX_SCANS 6
 
-
+extern pcap_t *global_handle;
 
 typedef struct {
     char *ip_address;

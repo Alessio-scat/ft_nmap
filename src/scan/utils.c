@@ -90,38 +90,90 @@ char *get_local_interface(int use_loopback) {
 }
 
 void initialize_status(ScanOptions *options, int num_techniques, int num_ports) {
-    // Allouer de la mémoire pour chaque technique (première dimension)
+    if (num_techniques <= 0 || num_ports <= 0) {
+        fprintf(stderr, "Invalid dimensions: num_techniques=%d, num_ports=%d\n", num_techniques, num_ports);
+        exit(1);
+    }
+
     options->status = malloc(num_techniques * sizeof(char **));
     if (options->status == NULL) {
         perror("Failed to allocate memory for techniques");
         exit(1);
     }
 
-    // Pour chaque technique, allouer la mémoire pour les statuts des ports (deuxième dimension)
-    for (int i = 0; i < num_techniques; i++)
-    {
+    for (int i = 0; i < num_techniques; i++) {
         options->status[i] = malloc(num_ports * sizeof(char *));
-        if (options->status[i] == NULL)
-        {
+        if (options->status[i] == NULL) {
+            for (int k = 0; k < i; k++) {
+                free(options->status[k]);
+            }
+            free(options->status);
             perror("Failed to allocate memory for ports");
             exit(1);
         }
 
-        for (int j = 0; j < num_ports; j++)
-        {
-            options->status[i][j] = malloc(10 * sizeof(char)); // Taille maximale pour chaque statut
-            if (options->status[i][j] == NULL)
-            {
+        for (int j = 0; j < num_ports; j++) {
+            options->status[i][j] = malloc(15 * sizeof(char)); // Augmenter la taille allouée
+            if (options->status[i][j] == NULL) {
+                for (int l = 0; l < j; l++) {
+                    free(options->status[i][l]);
+                }
+                free(options->status[i]);
+                for (int k = 0; k < i; k++) {
+                    free(options->status[k]);
+                }
+                free(options->status);
                 perror("Failed to allocate memory for status entry");
                 exit(1);
             }
-            if (options->tabscan[i] == 6)
-                strcpy(options->status[i][j], "open|filtered");
-            else if(options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4)
-                strcpy(options->status[i][j], "OPEN|FILTERED");
-            else
-                strcpy(options->status[i][j], "FILTERED");
+
+            if (options->tabscan[i] == 6) {
+                strncpy(options->status[i][j], "open|filtered", 14);
+                options->status[i][j][14] = '\0';
+            } else if (options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4) {
+                strncpy(options->status[i][j], "OPEN|FILTERED", 14);
+                options->status[i][j][14] = '\0';
+            } else {
+                strncpy(options->status[i][j], "FILTERED", 14);
+                options->status[i][j][14] = '\0';
+            }
         }
     }
 }
+
+// void initialize_status(ScanOptions *options, int num_techniques, int num_ports) {
+//     // Allouer de la mémoire pour chaque technique (première dimension)
+//     options->status = malloc(num_techniques * sizeof(char **));
+//     if (options->status == NULL) {
+//         perror("Failed to allocate memory for techniques");
+//         exit(1);
+//     }
+
+//     // Pour chaque technique, allouer la mémoire pour les statuts des ports (deuxième dimension)
+//     for (int i = 0; i < num_techniques; i++)
+//     {
+//         options->status[i] = malloc(num_ports * sizeof(char *));
+//         if (options->status[i] == NULL)
+//         {
+//             perror("Failed to allocate memory for ports");
+//             exit(1);
+//         }
+
+//         for (int j = 0; j < num_ports; j++)
+//         {
+//             options->status[i][j] = malloc(10 * sizeof(char)); // Taille maximale pour chaque statut
+//             if (options->status[i][j] == NULL)
+//             {
+//                 perror("Failed to allocate memory for status entry");
+//                 exit(1);
+//             }
+//             if (options->tabscan[i] == 6)
+//                 strcpy(options->status[i][j], "open|filtered");
+//             else if(options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4)
+//                 strcpy(options->status[i][j], "OPEN|FILTERED");
+//             else
+//                 strcpy(options->status[i][j], "FILTERED");
+//         }
+//     }
+// }
 

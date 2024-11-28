@@ -1,5 +1,7 @@
 #include "../include/ft_nmap.h"
 
+ScanOptions *global_options = NULL;
+
 void print_starting_message() {
     time_t now;
     struct tm *local_time;
@@ -42,9 +44,56 @@ void print_scan_types(ScanOptions *options) {
 }
 
 
+void signal_handler(int signum) {
+    if (signum == SIGINT) {
+        printf("\nSignal SIGINT reçu (Ctrl+C). Libération des ressources...\n");
+
+        if (global_options != NULL) {
+            // Libérer les ressources allouées dynamiquement
+            if (global_options->local_interface)
+                free(global_options->local_interface);
+            if (global_options->local_ip)
+                free(global_options->local_ip);
+            if (global_options->ip_host)
+                free(global_options->ip_host);
+            if (global_options->ip_address)
+                free(global_options->ip_address);
+
+            for (int j = 0; j < global_options->ip_count; j++)
+                free(global_options->ip_list[j]);
+            free(global_options->ip_list);
+            for (int i = 0; i < global_options->scan_count; i++) {
+                for (int j = 0; j < MAX_PORT; j++) {
+                    if (global_options->status[i][j] != NULL) {
+                        free(global_options->status[i][j]);
+                    }
+                }
+                free(global_options->status[i]);
+            }
+            free(global_options->status);
+
+            printf("Libération des ressources terminée.\n");
+        }
+
+        if (global_handle) {
+            printf("TESTETETTETETSTSTSTSTSTTETETETETET\n");
+            pcap_breakloop(global_handle); // Stoppe la capture en cours
+            pcap_close(global_handle);    // Ferme le handle
+            global_handle = NULL;         // Évite tout accès futur
+        }
+
+        printf("Arrêt du programme.\n");
+        exit(0);
+    }
+}
+
+
 int main(int ac, char **av) {
     // Initialisation de ScanOptions
     ScanOptions options = {NULL, NULL, NULL, 0, 0, {0}, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, {0}, 0, 0, 0};
+
+    global_options = &options;
+    signal(SIGINT, signal_handler);
 
     // Capturer le temps de début
     struct timeval start, end;
@@ -84,11 +133,20 @@ int main(int ac, char **av) {
     // Afficher les ports, en excluant ceux dans l'état "CLOSED"
     print_ports_excluding_state(&options, "CLOSED");
 
+    if (options.local_interface)
+        free(options.local_interface);
+    if (options.local_ip)
+        free(options.local_ip);
+    if (options.ip_host)
+        free(options.ip_host);
+    if (options.ip_address)
+        free(options.ip_address);
+
     // Libérer la mémoire
     for (int j = 0; j < options.ip_count; j++)
         free(options.ip_list[j]);
     free(options.ip_list);
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < options.scan_count; i++) {
         for (int j = 0; j < MAX_PORT; j++) {
             if (options.status[i][j] != NULL) {
                 free(options.status[i][j]);
@@ -98,6 +156,7 @@ int main(int ac, char **av) {
     }
     free(options.status);
 
+    
     // Capturer le temps de fin
     gettimeofday(&end, NULL);  // Temps de fin
 
