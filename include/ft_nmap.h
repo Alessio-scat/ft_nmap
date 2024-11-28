@@ -87,6 +87,7 @@ typedef struct {
     char *packet;    // Buffer de paquet partagé
     struct iphdr *iph; // Pointeur vers l'en-tête IP
     struct sockaddr_in dest; // Adresse cible
+    int technique;
 } ScanThreadData;
 
 
