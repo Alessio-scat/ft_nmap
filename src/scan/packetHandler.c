@@ -9,29 +9,6 @@ void os_detection(const struct iphdr *iph, ScanOptions *options){
     }
 }
 
-void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
-    struct icmphdr *icmp_header = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
-    // printf("ICMP\n");
-
-    if (options->scan_type == SCAN_NULL || options->scan_type == FIN || options->scan_type == XMAS) {
-        // Vérifier le type et le code ICMP pour déterminer si le port est filtré
-        if (icmp_header->type == 3) { // Type 3 : Destination Unreachable
-            int code = icmp_header->code;
-            if (code == 1 || code == 2 || code == 3 || code == 9 || code == 10 || code == 13) {
-                int port = ntohs(((struct tcphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr)))->dest);
-                
-                // Vérifier que le port est dans les limites
-                if (port > 0 && port <= MAX_PORT) {
-                    // Marquer le port comme filtré
-                    strcpy(options->status[options->currentScan][port - 1], "FILTERED");
-                }
-            }
-        }
-    }
-}
-
-
-
 void findCurrent(ScanOptions *options){
     for(int i = 0; i < options->scan_count; i++){
         if(options->tabscan[i] == options->scan_type){
@@ -40,25 +17,7 @@ void findCurrent(ScanOptions *options){
         }
     }
 }
-void print_tcphdr(struct tcphdr *tcph) {
-    printf("===== TCP Header =====\n");
-    printf("Source Port: %u\n", ntohs(tcph->source));
-    printf("Destination Port: %u\n", ntohs(tcph->dest));
-    printf("Sequence Number: %u\n", ntohl(tcph->seq));
-    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));
-    printf("Data Offset: %u (Header Length: %u bytes)\n", tcph->doff, tcph->doff * 4);
-    printf("Flags:\n");
-    printf("  SYN: %d\n", tcph->syn);
-    printf("  ACK: %d\n", tcph->ack);
-    printf("  FIN: %d\n", tcph->fin);
-    printf("  RST: %d\n", tcph->rst);
-    printf("  PSH: %d\n", tcph->psh);
-    printf("  URG: %d\n", tcph->urg);
-    printf("Window Size: %u\n", ntohs(tcph->window));
-    printf("Checksum: 0x%x\n", ntohs(tcph->check));
-    printf("Urgent Pointer: %u\n", ntohs(tcph->urg_ptr));
-    printf("======================\n");
-}
+
 void findScanType(struct tcphdr *tcph, ScanOptions *options){
     if (tcph->dest == htons(20000 + SYN)) {
         options->scan_type = SYN;
@@ -78,6 +37,78 @@ void findScanType(struct tcphdr *tcph, ScanOptions *options){
     }
 }
 
+void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
+    struct icmphdr *icmp_header = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
+    struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
+    int inner_ip_header_length = inner_iph->ihl * 4;
+
+    if (inner_iph->protocol == IPPROTO_TCP) {
+    printf("ICMP\n");
+        struct tcphdr *tcph = (struct tcphdr *)((char *)inner_iph + inner_ip_header_length);
+        findScanType(tcph, options);
+        // Vérifier le type et le code ICMP pour déterminer si le port est filtré
+        if (icmp_header->type == 3) { // Type 3 : Destination Unreachable
+            int code = icmp_header->code;
+            if (code == 1 || code == 2 || code == 3 || code == 9 || code == 10 || code == 13) {
+                int port = ntohs(((struct tcphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr)))->dest);
+                
+                // Vérifier que le port est dans les limites
+                if (port > 0 && port <= MAX_PORT) {
+                    // Marquer le port comme filtré
+                    strcpy(options->status[options->currentScan][port - 1], "FILTERED");
+                }
+            }
+        }
+    }
+    else{
+        // struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
+        // int inner_ip_header_length = inner_iph->ihl * 4;
+        struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
+        int port = ntohs(udph->dest);
+        options->scan_type = UDP;
+        findCurrent(options);
+        if (icmp_header->type == 3) {
+            switch (icmp_header->code) {
+                case 3:  // ICMP port unreachable
+                    if (port > 0 && port <= MAX_PORT){
+                        printf("yo\n");
+                        strcpy(options->status[options->currentScan][port - 1], "CLOSED");
+                    }
+                    break;
+
+                case 1: case 2: case 9: case 10: case 13:  // Autres erreurs ICMP "Unreachable"
+                    if (port > 0 && port <= MAX_PORT)
+                        strcpy(options->status[options->currentScan][port - 1], "FILTERED");
+                    break;
+
+                default:
+                    printf("Autre type de réponse ICMP non pris en charge pour le port : %d\n", port);
+                    break;
+            }
+        }
+    }
+}
+
+void print_tcphdr(struct tcphdr *tcph) {
+    printf("===== TCP Header =====\n");
+    printf("Source Port: %u\n", ntohs(tcph->source));
+    printf("Destination Port: %u\n", ntohs(tcph->dest));
+    printf("Sequence Number: %u\n", ntohl(tcph->seq));
+    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));
+    printf("Data Offset: %u (Header Length: %u bytes)\n", tcph->doff, tcph->doff * 4);
+    printf("Flags:\n");
+    printf("  SYN: %d\n", tcph->syn);
+    printf("  ACK: %d\n", tcph->ack);
+    printf("  FIN: %d\n", tcph->fin);
+    printf("  RST: %d\n", tcph->rst);
+    printf("  PSH: %d\n", tcph->psh);
+    printf("  URG: %d\n", tcph->urg);
+    printf("Window Size: %u\n", ntohs(tcph->window));
+    printf("Checksum: 0x%x\n", ntohs(tcph->check));
+    printf("Urgent Pointer: %u\n", ntohs(tcph->urg_ptr));
+    printf("======================\n");
+}
+
 // Fonction pour traiter les paquets TCP
 void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);
@@ -85,10 +116,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     if (port <= 0 || port > MAX_PORT) {
         return; // Ignorer les ports hors limites
     }
-    // print_tcphdr(tcph);
     findScanType(tcph, options);
-    // printf("passe %d %d\n", options->scan_type, port);
-// Ajoutez d'autres vérifications pour les autres techniques.
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
@@ -147,6 +175,13 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
         handle_icmp_packet(iph, packet, options);
     } else if (iph->protocol == IPPROTO_TCP) {
         handle_tcp_packet(iph, packet, options);
+    }else if (iph->protocol == IPPROTO_UDP) {
+        struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
+        int port = ntohs(udph->source); 
+        options->scan_type = UDP;
+        findCurrent(options);
+        if (port > 0 && port <= MAX_PORT)
+            strcpy(options->status[options->currentScan][port - 1], "OPEN");
     }
 
     // Mettre une alarme ou un délai si nécessaire
