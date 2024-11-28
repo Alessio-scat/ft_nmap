@@ -111,7 +111,7 @@ void tcp_scan_all_ports(ScanOptions *options) {
         // Create appropriate socket and build packet headers
         if (options->scan_type == 6) {
             sock = create_udp_socket(); // Use UDP socket for type 6 scans
-            // build_ip_header_udp(iph, &dest, options);
+            build_ip_header_udp(iph, &dest, options);
         } else {
             sock = create_raw_socket(); // Use raw socket for other scan types
 
@@ -127,13 +127,13 @@ void tcp_scan_all_ports(ScanOptions *options) {
         send_all_packets(sock, packet, iph, &dest, options);
 
         // Wait for responses for the current scan type
-        wait_for_responses(handle, options);
 
         // Optional: Add a short delay between scans
+        close(sock);
         sleep(1);
     }
 
+    wait_for_responses(handle, options);
     // Close the raw/UDP socket and pcap after all scans
-    close(sock);
     pcap_close(handle);
 }

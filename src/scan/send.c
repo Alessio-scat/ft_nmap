@@ -74,18 +74,10 @@ void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr
             memset(packet, 0, 4096); // Nettoyer le buffer
             struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
 
-            // Construire l'en-tête IP
-            iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr));
-            iph->protocol = IPPROTO_UDP;
-
-            // Construire l'en-tête UDP
-            udph->source = htons(12345); // Port source arbitraire
-            udph->dest = htons(target_port); // Port cible
-            udph->len = htons(sizeof(struct udphdr));
-            udph->check = 0; // Pas de checksum pour simplifier
+            build_udp_header_udp(udph, target_port);
 
             // Envoyer le paquet
-            if (sendto(sock, packet, sizeof(struct iphdr) + sizeof(struct udphdr), 0,
+            if (sendto(sock, packet, htons(iph->tot_len), 0,
                        (struct sockaddr *)dest, sizeof(*dest)) < 0) {
                 perror("Failed to send UDP packet");
             }
