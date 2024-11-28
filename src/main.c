@@ -76,10 +76,9 @@ void signal_handler(int signum) {
         }
 
         if (global_handle) {
-            printf("TESTETETTETETSTSTSTSTSTTETETETETET\n");
-            pcap_breakloop(global_handle); // Stoppe la capture en cours
-            pcap_close(global_handle);    // Ferme le handle
-            global_handle = NULL;         // Évite tout accès futur
+            pcap_breakloop(global_handle);
+            pcap_close(global_handle);
+            global_handle = NULL;
         }
 
         printf("Arrêt du programme.\n");

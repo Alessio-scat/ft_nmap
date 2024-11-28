@@ -66,7 +66,7 @@ pcap_t *init_pcap(const char *interface) {
 
     pcap_freecode(&fp);  // Libérer la mémoire du filtre BPF
     printf("Interface %s ouverte avec un filtre TCP.\n", interface);
-
+    global_handle = handle;
     return handle;
 }
 
