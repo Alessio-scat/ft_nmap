@@ -52,155 +52,155 @@ int create_udp_socket() {
     https://nmap.org/book/scan-methods-udp-scan.html#scan-methods-tbl-udp-scan-responses
 */
 
-void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    (void)pkthdr;
-    ScanOptions *options = (ScanOptions *)user_data;
+// void packet_handler_udp(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+//     (void)pkthdr;
+//     ScanOptions *options = (ScanOptions *)user_data;
 
-    struct iphdr *iph = (struct iphdr *)(packet + 14);  // En-tête IP après l'en-tête Ethernet
-    struct in_addr source_addr;
-    source_addr.s_addr = iph->saddr;
+//     struct iphdr *iph = (struct iphdr *)(packet + 14);  // En-tête IP après l'en-tête Ethernet
+//     struct in_addr source_addr;
+//     source_addr.s_addr = iph->saddr;
     
 
-    // Ignorer les paquets provenant d'autres IPs
-    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0)
-        return;
+//     // Ignorer les paquets provenant d'autres IPs
+//     if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0)
+//         return;
 
-    // Cas des paquets ICMP
-    if (iph->protocol == IPPROTO_ICMP) {
-        struct icmphdr *icmph = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
+//     // Cas des paquets ICMP
+//     if (iph->protocol == IPPROTO_ICMP) {
+//         struct icmphdr *icmph = (struct icmphdr *)(packet + 14 + iph->ihl * 4);
 
-        struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
-        int inner_ip_header_length = inner_iph->ihl * 4;
-        struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
-        int port = ntohs(udph->dest);
+//         struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
+//         int inner_ip_header_length = inner_iph->ihl * 4;
+//         struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
+//         int port = ntohs(udph->dest);
 
-        if (icmph->type == 3) {
-            switch (icmph->code) {
-                case 3:  // ICMP port unreachable
-                    if (port > 0 && port <= MAX_PORT)
-                        strcpy(options->status[options->currentScan][port - 1], "CLOSED");
-                    break;
+//         if (icmph->type == 3) {
+//             switch (icmph->code) {
+//                 case 3:  // ICMP port unreachable
+//                     if (port > 0 && port <= MAX_PORT)
+//                         strcpy(options->status[options->currentScan][port - 1], "CLOSED");
+//                     break;
 
-                case 1: case 2: case 9: case 10: case 13:  // Autres erreurs ICMP "Unreachable"
-                    if (port > 0 && port <= MAX_PORT)
-                        strcpy(options->status[options->currentScan][port - 1], "FILTERED");
-                    break;
+//                 case 1: case 2: case 9: case 10: case 13:  // Autres erreurs ICMP "Unreachable"
+//                     if (port > 0 && port <= MAX_PORT)
+//                         strcpy(options->status[options->currentScan][port - 1], "FILTERED");
+//                     break;
 
-                default:
-                    printf("Autre type de réponse ICMP non pris en charge pour le port : %d\n", port);
-                    break;
-            }
-        }
-    }
-    else if (iph->protocol == IPPROTO_UDP) {
-        struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
-        int port = ntohs(udph->source); 
+//                 default:
+//                     printf("Autre type de réponse ICMP non pris en charge pour le port : %d\n", port);
+//                     break;
+//             }
+//         }
+//     }
+//     else if (iph->protocol == IPPROTO_UDP) {
+//         struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
+//         int port = ntohs(udph->source); 
 
-        if (port > 0 && port <= MAX_PORT)
-            strcpy(options->status[options->currentScan][port - 1], "OPEN");
-    }
-}
+//         if (port > 0 && port <= MAX_PORT)
+//             strcpy(options->status[options->currentScan][port - 1], "OPEN");
+//     }
+// }
 
-pcap_t *init_pcap_udp(const char *interface) {
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_t *handle;
+// pcap_t *init_pcap_udp(const char *interface) {
+//     char errbuf[PCAP_ERRBUF_SIZE];
+//     pcap_t *handle;
 
-    if (getuid() != 0) {
-        fprintf(stderr, "You need to be root to run this program\n");
-        exit(1);
-    }
+//     if (getuid() != 0) {
+//         fprintf(stderr, "You need to be root to run this program\n");
+//         exit(1);
+//     }
 
-    handle = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf);
-    if (handle == NULL) {
-        fprintf(stderr, "Error opening interface: %s\n", errbuf);
-        exit(1);
-    }
+//     handle = pcap_open_live(interface, BUFSIZ, 1, 1000, errbuf);
+//     if (handle == NULL) {
+//         fprintf(stderr, "Error opening interface: %s\n", errbuf);
+//         exit(1);
+//     }
 
-    // Appliquer un filtre BPF pour capturer les paquets TCP ou ICMP
-    struct bpf_program fp;
-    char filter_exp[] = "icmp or udp";
-    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
-        fprintf(stderr, "Error compiling BPF filter: %s\n", pcap_geterr(handle));
-        pcap_close(handle);
-        exit(1);
-    }
+//     // Appliquer un filtre BPF pour capturer les paquets TCP ou ICMP
+//     struct bpf_program fp;
+//     char filter_exp[] = "icmp or udp";
+//     if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
+//         fprintf(stderr, "Error compiling BPF filter: %s\n", pcap_geterr(handle));
+//         pcap_close(handle);
+//         exit(1);
+//     }
 
-    if (pcap_setfilter(handle, &fp) == -1) {
-        fprintf(stderr, "Error setting BPF filter: %s\n", pcap_geterr(handle));
-        pcap_freecode(&fp);
-        pcap_close(handle);
-        exit(1);
-    }
+//     if (pcap_setfilter(handle, &fp) == -1) {
+//         fprintf(stderr, "Error setting BPF filter: %s\n", pcap_geterr(handle));
+//         pcap_freecode(&fp);
+//         pcap_close(handle);
+//         exit(1);
+//     }
 
-    pcap_freecode(&fp);  // Libérer la mémoire du filtre BPF
+//     pcap_freecode(&fp);  // Libérer la mémoire du filtre BPF
 
-    return handle;
-}
+//     return handle;
+// }
 
-void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
-    global_handle_udp = handle;
+// void wait_for_responses_udp(pcap_t *handle, ScanOptions *options) {
+//     global_handle_udp = handle;
 
-    // Définir un timeout (exemple: 15 secondes)
-    signal(SIGALRM, timeout_handler_udp);
-    alarm(5);  // Timeout de 15 secondes
+//     // Définir un timeout (exemple: 15 secondes)
+//     signal(SIGALRM, timeout_handler_udp);
+//     alarm(5);  // Timeout de 15 secondes
 
-    int res;
-    while (!stop_pcap_udp) {
+//     int res;
+//     while (!stop_pcap_udp) {
 
-        res = pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
+//         res = pcap_dispatch(handle, -1, packet_handler_udp, (u_char *)options);
         
-        if (res == -1) {
-            fprintf(stderr, "Erreur dans pcap_dispatch : %s\n", pcap_geterr(handle));
-            break;
-        }
-    }
+//         if (res == -1) {
+//             fprintf(stderr, "Erreur dans pcap_dispatch : %s\n", pcap_geterr(handle));
+//             break;
+//         }
+//     }
 
-    alarm(2);  // Arrêter l'alarme si la boucle se termine
-    global_handle_udp = NULL;
-}
+//     alarm(2);  // Arrêter l'alarme si la boucle se termine
+//     global_handle_udp = NULL;
+// }
 
 
-void udp_scan_all_ports(ScanOptions *options) {
-    int sock = create_udp_socket();
-    struct sockaddr_in dest;
-    char packet[4096];  // Buffer pour le paquet
-    pcap_t *handle = init_pcap_udp(options->local_interface);
+// void udp_scan_all_ports(ScanOptions *options) {
+//     int sock = create_udp_socket();
+//     struct sockaddr_in dest;
+//     char packet[4096];  // Buffer pour le paquet
+//     pcap_t *handle = init_pcap_udp(options->local_interface);
 
-    // Configurer l'adresse de destination
-    dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = inet_addr(options->ip_address);
+//     // Configurer l'adresse de destination
+//     dest.sin_family = AF_INET;
+//     dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
-    struct iphdr *iph = (struct iphdr *)packet;
-    build_ip_header_udp(iph, &dest, options);
+//     struct iphdr *iph = (struct iphdr *)packet;
+//     build_ip_header_udp(iph, &dest, options);
 
-    // Construire et envoyer les paquets UDP sur les ports spécifiés
-    for (int j = 0; j < options->portsTabSize; j++) {
-        int target_port = options->portsTab[j];
-        dest.sin_port = htons(target_port);
+//     // Construire et envoyer les paquets UDP sur les ports spécifiés
+//     // for (int j = 0; j < options->portsTabSize; j++) {
+//     //     int target_port = options->portsTab[j];
+//     //     dest.sin_port = htons(target_port);
 
-        // Nettoyer le paquet
-        memset(packet, 0, 4096);
+//         // Nettoyer le paquet
+//         // memset(packet, 0, 4096);
 
-        // Construire les en-têtes IP et UDP
-        struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
+//         // // Construire les en-têtes IP et UDP
+//         // struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
 
-        build_udp_header_udp(udph, target_port);
+//         // build_udp_header_udp(udph, target_port);
 
-        // Envoyer le paquet personnalisé
-        if (sendto(sock, packet, ntohs(iph->tot_len), 0, (struct sockaddr *)&dest, sizeof(dest)) < 0) {
-            perror("Failed to send UDP packet");
-        }
+//         // // Envoyer le paquet personnalisé
+//         // if (sendto(sock, packet, ntohs(iph->tot_len), 0, (struct sockaddr *)&dest, sizeof(dest)) < 0) {
+//         //     perror("Failed to send UDP packet");
+//         // }
 
         
-        // Petit délai entre les envois pour éviter de saturer le réseau
-        usleep(1000);
-    }
+//         // Petit délai entre les envois pour éviter de saturer le réseau
+//         // usleep(1000);
+//     // }
 
-    // Attendre les réponses ICMP
+//     // Attendre les réponses ICMP
     
-    wait_for_responses_udp(handle, options);
+//     wait_for_responses_udp(handle, options);
 
-    // Fermer le socket et l'interface pcap après la capture des réponses
-    close(sock);
-    pcap_close(handle);
-}
+//     // Fermer le socket et l'interface pcap après la capture des réponses
+//     close(sock);
+//     pcap_close(handle);
+// }

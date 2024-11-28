@@ -104,5 +104,8 @@ void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options
 void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
 int create_raw_socket();
 
+int create_udp_socket();
+void build_udp_header_udp(struct udphdr *udph, int target_port);
+void build_ip_header_udp(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
 
 #endif

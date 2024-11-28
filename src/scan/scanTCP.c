@@ -50,7 +50,7 @@ pcap_t *init_pcap(const char *interface) {
 
     // Appliquer un filtre BPF pour capturer uniquement les paquets TCP
     struct bpf_program fp;
-    char filter_exp[] = "tcp or icmp";
+    char filter_exp[] = "tcp or icmp or udp";
     if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
         fprintf(stderr, "Error compiling BPF filter: %s\n", pcap_geterr(handle));
         pcap_close(handle);
@@ -88,52 +88,52 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
 }
 
 void tcp_scan_all_ports(ScanOptions *options) {
-    // Créer le socket brut une seule fois
-    int sock = create_raw_socket();
+    int sock; // Declare `sock` at the beginning of the function
     int optval = 1;
 
-    if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
-        perror("Error setting IP_HDRINCL");
-        exit(1);
-    }
-
-    // Initialiser pcap une seule fois pour capturer les réponses
+    // Initialize pcap once for capturing responses
     pcap_t *handle = init_pcap(options->local_interface);
 
-    // Préparer le paquet
+    // Prepare the packet
     char packet[4096];
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
-    // Construire l'en-tête IP une fois (valide pour les deux scans)
-    build_ip_header(iph, &dest, options);
-
-    // Boucle interne pour exécuter chaque type de scan
+    // Loop through each scan type
     for (int i = 0; i < options->scan_count; i++) {
         stop_pcap = false;
         options->currentScan = i;
         options->scan_type = options->tabscan[i];
         printf("%d\n", options->scan_type);
-        if(options->scan_type == 6){
-            udp_scan_all_ports(options);
+
+        // Create appropriate socket and build packet headers
+        if (options->scan_type == 6) {
+            sock = create_udp_socket(); // Use UDP socket for type 6 scans
+            // build_ip_header_udp(iph, &dest, options);
+        } else {
+            sock = create_raw_socket(); // Use raw socket for other scan types
+
+            // Set IP_HDRINCL for raw sockets
+            if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
+                perror("Error setting IP_HDRINCL");
+                exit(1);
+            }
+            build_ip_header(iph, &dest, options);
         }
-        else {
-        // Envoyer les paquets pour le type de scan actuel
+
+        // Send packets for the current scan type
         send_all_packets(sock, packet, iph, &dest, options);
 
-        // Attendre les réponses pour le scan actuel
+        // Wait for responses for the current scan type
         wait_for_responses(handle, options);
 
-        // Optionnel : ajouter un délai court entre les scans pour éviter les interférences
+        // Optional: Add a short delay between scans
         sleep(1);
-        }
     }
 
-    // Fermer le socket brut et pcap après tous les scans
+    // Close the raw/UDP socket and pcap after all scans
     close(sock);
     pcap_close(handle);
 }
-
-

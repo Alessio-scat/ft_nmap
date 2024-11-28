@@ -28,6 +28,30 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
             }
         }
     }
+    else{
+        struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
+        int inner_ip_header_length = inner_iph->ihl * 4;
+        struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
+        int port = ntohs(udph->dest);
+
+        if (icmp_header->type == 3) {
+            switch (icmp_header->code) {
+                case 3:  // ICMP port unreachable
+                    if (port > 0 && port <= MAX_PORT)
+                        strcpy(options->status[options->currentScan][port - 1], "CLOSED");
+                    break;
+
+                case 1: case 2: case 9: case 10: case 13:  // Autres erreurs ICMP "Unreachable"
+                    if (port > 0 && port <= MAX_PORT)
+                        strcpy(options->status[options->currentScan][port - 1], "FILTERED");
+                    break;
+
+                default:
+                    printf("Autre type de réponse ICMP non pris en charge pour le port : %d\n", port);
+                    break;
+            }
+        }
+    }
 }
 
 // Fonction pour traiter les paquets TCP
@@ -98,6 +122,12 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
         handle_icmp_packet(iph, packet, options);
     } else if (iph->protocol == IPPROTO_TCP) {
         handle_tcp_packet(iph, packet, options);
+    }else if (iph->protocol == IPPROTO_UDP) {
+        struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
+        int port = ntohs(udph->source); 
+
+        if (port > 0 && port <= MAX_PORT)
+            strcpy(options->status[options->currentScan][port - 1], "OPEN");
     }
 
     // Mettre une alarme ou un délai si nécessaire
