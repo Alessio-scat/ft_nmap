@@ -90,10 +90,8 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
 
 void tcp_scan_all_ports(ScanOptions *options) {
     int sock; // Declare `sock` at the beginning of the function
-    int optval = 1;
-
     // Initialize pcap once for capturing responses
-    pcap_t *handle = init_pcap(options->local_interface);
+    // pcap_t *handle = init_pcap(options->local_interface);
 
     // Prepare the packet
     char packet[4096];
@@ -101,13 +99,12 @@ void tcp_scan_all_ports(ScanOptions *options) {
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
-
     // Loop through each scan type
     for (int i = 0; i < options->scan_count; i++) {
         stop_pcap = false;
         options->currentScan = i;
         options->scan_type = options->tabscan[i];
-        printf("%d\n", options->scan_type);
+        // printf("%d %d %d\n", options->scan_type, options->start_scan, options->end_scan);
 
         // Create appropriate socket and build packet headers
         if (options->scan_type == 6) {
@@ -115,12 +112,6 @@ void tcp_scan_all_ports(ScanOptions *options) {
             build_ip_header_udp(iph, &dest, options);
         } else {
             sock = create_raw_socket(); // Use raw socket for other scan types
-
-            // Set IP_HDRINCL for raw sockets
-            if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
-                perror("Error setting IP_HDRINCL");
-                exit(1);
-            }
             build_ip_header(iph, &dest, options);
         }
 
@@ -131,10 +122,9 @@ void tcp_scan_all_ports(ScanOptions *options) {
 
         // Optional: Add a short delay between scans
         close(sock);
-        sleep(1);
     }
 
-    wait_for_responses(handle, options);
-    // Close the raw/UDP socket and pcap after all scans
-    pcap_close(handle);
+    // wait_for_responses(handle, options);
+    // // Close the raw/UDP socket and pcap after all scans
+    // pcap_close(handle);
 }

@@ -36,6 +36,8 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
         const char *scan_name = get_scan_name(scan_type);
         if(options->tabscan[technique] == ACK)
             excluded_state = "UNFILTERED";
+        else if(options->tabscan[technique] == UDP)
+            excluded_state = "open|filtered";
         else
             excluded_state = "CLOSED";
         int excluded_count = 0;

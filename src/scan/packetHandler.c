@@ -43,7 +43,6 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
     int inner_ip_header_length = inner_iph->ihl * 4;
 
     if (inner_iph->protocol == IPPROTO_TCP) {
-    printf("ICMP\n");
         struct tcphdr *tcph = (struct tcphdr *)((char *)inner_iph + inner_ip_header_length);
         findScanType(tcph, options);
         // Vérifier le type et le code ICMP pour déterminer si le port est filtré
@@ -71,7 +70,6 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
             switch (icmp_header->code) {
                 case 3:  // ICMP port unreachable
                     if (port > 0 && port <= MAX_PORT){
-                        printf("yo\n");
                         strcpy(options->status[options->currentScan][port - 1], "CLOSED");
                     }
                     break;
@@ -117,6 +115,7 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         return; // Ignorer les ports hors limites
     }
     findScanType(tcph, options);
+    // printf("port %d scan %d\n", port, options->scan_type);
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||

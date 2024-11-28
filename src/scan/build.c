@@ -1,9 +1,14 @@
 #include "ft_nmap.h"
 
 int create_raw_socket() {
+    int optval = 1;
     int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
     if (sockfd < 0) {
         perror("Error creating raw socket");
+        exit(1);
+    }
+    if (setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
+        perror("Error setting IP_HDRINCL");
         exit(1);
     }
     return sockfd;
@@ -42,14 +47,17 @@ void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options
     if (options->scan_type == FIN || options->scan_type == XMAS) {
         tcph->fin = 1; 
     }
-    tcph->fin = 0;   // Flag FIN désactivé
+    else
+        tcph->fin = 0;   // Flag FIN désactivé
     tcph->rst = 0;   // Flag RST désactivé
     if (options->scan_type == XMAS){
         tcph->psh = 1;   
         tcph->urg = 1;   
     }
-    tcph->psh = 0;   // Flag PSH désactivé
-    tcph->urg = 0;   // Flag URG désactivé
+    else{
+        tcph->psh = 0;   // Flag PSH désactivé
+        tcph->urg = 0;   // Flag URG désactivé
+    }
     if (options->scan_type == ACK) {
         tcph->ack = 1; 
     }

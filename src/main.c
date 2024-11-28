@@ -78,11 +78,15 @@ int main(int ac, char **av) {
             options.local_ip = get_local_ip(use_loopback);
             options.local_interface = get_local_interface(use_loopback);
             // Effectuer le scan
+            pcap_t *handle = init_pcap(options.local_interface);
             print_starting_message();
             if(options.speedup != 0)
                 run_scans_by_techniques(&options);
             else
                 tcp_scan_all_ports(&options);
+            wait_for_responses(handle, &options);
+            // Close the raw/UDP socket and pcap after all scans
+            pcap_close(handle);
             // Afficher les ports, en excluant ceux dans l'état "CLOSED"
             print_ports_excluding_state(&options, "CLOSED");
             printf("\n");

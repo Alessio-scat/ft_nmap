@@ -6,92 +6,57 @@ void *threaded_scan(void *arg) {
     ScanThreadData *data = (ScanThreadData *)arg;
     ScanOptions *options = data->options;
 
-    printf("Thread %d: start_scan=%d, end_scan=%d\n", data->thread_id, data->start_scan, data->end_scan);
-
-    // Crée un socket local
-    // int sock = create_raw_socket();
-    // int optval = 1;
-    // if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
-    //     perror("Error setting IP_HDRINCL");
-    //     pthread_exit(NULL);
-    // }
-
-    // Crée un handle pcap local
-    // pcap_t *handle = init_pcap(options->local_interface);
-    // Prépare un buffer de paquet local
-    // char packet[4096];
-    // struct iphdr *iph = (struct iphdr *)packet;
-    // struct sockaddr_in dest;
-    // dest.sin_family = AF_INET;
-    // dest.sin_addr.s_addr = inet_addr(options->ip_address);
-
     pthread_mutex_lock(&mutex);
-    // build_ip_header(iph, &dest, options);
-    int sock = data->sock;
-    // pcap_t *handle = data->handle;
+    int sock; // Declare `sock` at the beginning of the function
+    sock = 1;
+    
     char *packet = data->packet;
     struct iphdr *iph = data->iph;
     struct sockaddr_in dest = data->dest;
 
     // Boucle sur les scans assignés
-    if (data->start_scan == data->end_scan) {
-        int scan = data->start_scan;
+    for (int scan = data->start_scan; scan < data->end_scan; scan++) {
+        // Synchronisation pour les modifications partagées
+        stop_pcap = false;
         options->currentScan = scan;
         options->scan_type = options->tabscan[scan];
-        printf("TTTTTThread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
-        // Boucle sur les ports
-        stop_pcap = false;
-        for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
-            int target_port = options->portsTab[port_idx];
-            dest.sin_port = htons(target_port);
-            
-
-            build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
-            send_packet(sock, packet, iph, &dest);
-            usleep(1000);
+        if (options->scan_type == 6) {
+            sock = create_udp_socket(); // Use UDP socket for type 6 scans
+            build_ip_header_udp(iph, &dest, options);
+        } else {
+            sock = create_raw_socket(); // Use raw socket for other scan types
+            build_ip_header(iph, &dest, options);
         }
+        for (int j = data->start_port; j < data->end_port; j++) {
+            int target_port = options->portsTab[j];
 
-        // wait_for_responses(handle, options);
-        printf("Thread %d: Finished scan %d\n", data->thread_id, scan);
-    } else {
-        for (int scan = data->start_scan; scan < data->end_scan; scan++) {
-            // Synchronisation pour les modifications partagées
-            options->currentScan = scan;
-            options->scan_type = options->tabscan[scan];
-            
-            printf("Thread %d: Performing scan %d of type %d\n", data->thread_id, scan, options->scan_type);
+            dest.sin_port = htons(target_port); // Définir le port cible
 
-            // Boucle sur les ports
-            stop_pcap = false;
-            for (int port_idx = data->start_port; port_idx < data->end_port; port_idx++) {
-                // printf("yo\n");
-                int target_port = options->portsTab[port_idx];
-                dest.sin_port = htons(target_port);
+            if (options->scan_type == UDP) {
+                // Initialiser les en-têtes IP et UDP
+                memset(packet, 0, 4096); // Nettoyer le buffer
+                struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
 
-                // Construire et envoyer le paquet
+                build_udp_header_udp(udph, target_port);
+
+                // Envoyer le paquet
+                if (sendto(sock, packet, htons(iph->tot_len), 0,
+                        (struct sockaddr *)&dest, sizeof(dest)) < 0) {
+                    perror("Failed to send UDP packet");
+                }
+            } else {
+                // Construire et envoyer les paquets TCP
                 build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
-                // pthread_mutex_lock(&mutex);
                 send_packet(sock, packet, iph, &dest);
-                // pthread_mutex_unlock(&mutex);
-                usleep(1000); // Délai pour éviter la saturation réseau
-                
             }
 
-            // Attendre les réponses pour ce scan
-            // pthread_mutex_lock(&mutex);
-            // wait_for_responses(handle, options);
-            // pthread_mutex_unlock(&mutex);
-            // usleep(1000); // Délai pour éviter les interférences entre scans
-            printf("Thread %d: Finished scan %d\n", data->thread_id, scan);
+            // Petit délai entre les envois
+            usleep(1000);
         }
+        
     }
-
-    // Libération des ressources locales
-    // close(sock);
-    // pcap_close(handle);
     pthread_mutex_unlock(&mutex);
-
-    printf("Thread %d: Finished all scans.\n", data->thread_id);
+    // printf("Thread %d: Finished all scans.\n", data->thread_id);
     pthread_exit(NULL);
     return NULL;
 }
@@ -101,15 +66,6 @@ void run_scans_by_techniques(ScanOptions *options) {
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
 
-    // Initialisation commune
-    int sock = create_raw_socket();
-    int optval = 1;
-    if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
-        perror("Error setting IP_HDRINCL");
-        exit(1);
-    }
-
-    pcap_t *handle = init_pcap(options->local_interface);
     char *packet = malloc(4096);
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
@@ -122,6 +78,7 @@ void run_scans_by_techniques(ScanOptions *options) {
     int total_combinations = options->scan_count * options->portsTabSize;
     int combinations_per_thread = total_combinations / num_threads;
     int extra_combinations = total_combinations % num_threads;
+    printf("scan_count %d portsTabSize %d num_threads %d combinations_per_thread %d extra_combinations %d\n", options->scan_count, options->portsTabSize, num_threads, combinations_per_thread, extra_combinations);
 
     int current_combination = 0;
 
@@ -129,9 +86,6 @@ void run_scans_by_techniques(ScanOptions *options) {
         thread_data[i].thread_id = i;
         thread_data[i].options = options;
 
-        // Partager les ressources initialisées
-        thread_data[i].sock = sock;
-        thread_data[i].handle = handle;
         thread_data[i].packet = packet;
         thread_data[i].iph = iph;
         thread_data[i].dest = dest;
@@ -158,7 +112,8 @@ void run_scans_by_techniques(ScanOptions *options) {
             thread_data[i].start_port = 0;               // Début des ports
             thread_data[i].end_port = options->portsTabSize; // Fin des ports
         }
-
+        if(thread_data[i].start_scan == thread_data[i].end_scan)
+            thread_data[i].end_scan++;
         printf("Thread %d: scans [%d, %d), ports [%d, %d)\n",
                i, thread_data[i].start_scan, thread_data[i].end_scan,
                thread_data[i].start_port, thread_data[i].end_port);
@@ -173,12 +128,8 @@ void run_scans_by_techniques(ScanOptions *options) {
     // Attendre que tous les threads terminent
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
-        printf("Thread %d joined.\n", i);
+        // printf("Thread %d joined.\n", i);
     }
-    wait_for_responses(handle, options);
-    // Libération des ressources partagées
-    close(sock);
-    pcap_close(handle);
     free(packet);
 }
 
