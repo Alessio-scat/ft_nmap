@@ -21,7 +21,7 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
 
-extern volatile bool stop_pcap;
+extern bool stop_pcap;
 
 
 #define MAX_PORT 1024
@@ -90,6 +90,11 @@ typedef struct {
     int technique;
 } ScanThreadData;
 
+// typedef struct {
+//     ScanOptions *options; // Pointeur vers les options globales
+//     int start_port;       // Début de la plage de ports
+//     int end_port;         // Fin de la plage de ports
+// } ScanThreadData;
 
 
 
