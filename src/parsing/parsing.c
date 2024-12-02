@@ -57,7 +57,7 @@ void parse_arguments(int ac, char **av, ScanOptions *options) {
     }
 
     // Minimal validation to ensure either IP or file is specified
-    if (options->ip_address == NULL && options->file == NULL) {
+    if (options->ip_count == 0) {
         fprintf(stderr, "Error: You must specify an IP address with --ip or a file with --file.\n"); exit(1);
     }
 }
