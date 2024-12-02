@@ -22,6 +22,23 @@ void handle_scan_option(int *i, int ac, char **av, ScanOptions *options) {
 
         int scan_code = validate_scan_type(av[*i + 1]);
         if (scan_code) {
+
+            // Vérifie si ce type de scan est déjà dans tabscan
+            bool already_exists = false;
+            for (int j = 0; j < scan_count; j++) {
+                if (options->tabscan[j] == scan_code) {
+                    already_exists = true;
+                    break;
+                }
+            }
+
+            if (already_exists) {
+                cleanup_options(options);
+                fprintf(stderr, "Error: Duplicate scan type: %s\n", av[*i + 1]);
+                print_help();
+                exit(1);
+            }
+
             options->tabscan[scan_count++] = scan_code;
             (*i)++;
         } 
