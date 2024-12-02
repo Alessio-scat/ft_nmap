@@ -25,7 +25,8 @@ void signal_handler(int signum) {
             //     free(global_options->status[i]);
             // }
             // free(global_options->status);
-            free_nmap(global_options);
+            // free_nmap(global_options);
+            cleanup_options(global_options);
 
         }
 

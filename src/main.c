@@ -87,7 +87,8 @@ int main(int ac, char **av) {
         reset_status(&options, options.scan_count, MAX_PORT);
     }
 
-    free_nmap(&options);
+    // free_nmap(&options);
+    cleanup_options(&options);
 
     
     // Capturer le temps de fin

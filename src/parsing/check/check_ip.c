@@ -111,6 +111,7 @@ void handle_ip_option_in_file(int *ip_index, ScanOptions *options) {
     }
 
     if (*ip_index >= options->ip_count) {
+        cleanup_options(options);
         fprintf(stderr, "Error: No valid IP addresses found.\n");
         exit(1);
     }
