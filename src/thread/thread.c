@@ -2,63 +2,6 @@
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-// void *threaded_scan(void *arg) {
-//     ScanThreadData *data = (ScanThreadData *)arg;
-//     ScanOptions *options = data->options;
-
-//     int sock; // Declare `sock` at the beginning of the function
-//     sock = 1;
-//     pthread_mutex_lock(&mutex);
-//     char *packet = data->packet;
-//     struct iphdr *iph = data->iph;
-//     struct sockaddr_in dest = data->dest;
-
-//     // Boucle sur les scans assignés
-//     for (int scan = data->start_scan; scan < data->end_scan; scan++) {
-//         // Synchronisation pour les modifications partagées
-//         stop_pcap = false;
-//         // options->currentScan = scan;
-//         options->scan_type = options->tabscan[scan];
-//         if (options->scan_type == 6) {
-//             sock = create_udp_socket(); // Use UDP socket for type 6 scans
-//             build_ip_header_udp(iph, &dest, options);
-//         } else {
-//             sock = create_raw_socket(); // Use raw socket for other scan types
-//             build_ip_header(iph, &dest, options);
-//         }
-//         for (int j = data->start_port; j < data->end_port; j++) {
-//             int target_port = options->portsTab[j];
-//             // printf("%d %d\n",target_port, scan_type);
-//             dest.sin_port = htons(target_port); // Définir le port cible
-//             if (options->scan_type == UDP) {
-//                 // Initialiser les en-têtes IP et UDP
-//                 memset(packet, 0, 4096); // Nettoyer le buffer
-//                 struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
-
-//                 build_udp_header_udp(udph, target_port);
-
-//                 // Envoyer le paquet
-//                 if (sendto(sock, packet, htons(iph->tot_len), 0,
-//                         (struct sockaddr *)&dest, sizeof(dest)) < 0) {
-//                     perror("Failed to send UDP packet");
-//                 }
-//             } else {
-//                 // Construire et envoyer les paquets TCP
-//                 build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
-//                 send_packet(sock, packet, iph, &dest);
-//             }
-
-//             // Petit délai entre les envois
-//             usleep(1000);
-//         }
-        
-//     }
-//     pthread_mutex_unlock(&mutex);
-//     // printf("Thread %d: Finished all scans.\n", data->thread_id);
-//     pthread_exit(NULL);
-//     return NULL;
-// }
-
 void build_tcp_header_thread(struct tcphdr *tcph, int target_port, int scan_type) {
     tcph->source = htons(20000 + scan_type);  // Port source aléatoire
     tcph->dest = htons(target_port);  // Port cible
@@ -103,6 +46,7 @@ void *threaded_scan(void *arg) {
         perror("Memory allocation failed");
         pthread_exit(NULL);
     }
+    memset(packet, 0, 4096);
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest = data->dest;
 
@@ -151,6 +95,7 @@ void thread_smaller_than_scan(ScanOptions *options) {
     ScanThreadData thread_data[num_threads];
 
     char *packet = malloc(4096);
+    memset(packet, 0, 4096);
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
@@ -244,6 +189,7 @@ void run_scans_by_techniques(ScanOptions *options) {
     ScanThreadData thread_data[num_threads];
 
     char *packet = malloc(4096);
+    memset(packet, 0, 4096);
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;

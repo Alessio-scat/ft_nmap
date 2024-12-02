@@ -66,40 +66,7 @@ int main(int ac, char **av) {
         options.portsTabSize = 1024;
     }
     initialize_status(&options, options.scan_count, MAX_PORT);
-        // for(int i = 0; i < options.ip_count; i++){
-        //     handle_ip_option_in_file(&i, &options);
-        //     int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
-        //     options.local_ip = get_local_ip(use_loopback);
-        //     options.local_interface = get_local_interface(use_loopback);
-        //     // Effectuer le scan
-        //     pcap_t *handle = init_pcap(options.local_interface);
-        //     print_starting_message();
-        //     if(options.speedup != 0)
-        //         run_scans_by_techniques(&options);
-        //     else
-        //         tcp_scan_all_ports(&options);
-        //     wait_for_responses(handle, &options);
-        //     // Close the raw/UDP socket and pcap after all scans
-        //     pcap_close(handle);
-        //     // Afficher les ports, en excluant ceux dans l'état "CLOSED"
-        //     print_ports_excluding_state(&options, "CLOSED");
-        //     printf("\n");
-        //     reset_status(&options, options.scan_count, MAX_PORT);
-        // }
 
-    // Libérer la mémoire
-    // for (int j = 0; j < options.ip_count; j++)
-    //     free(options.ip_list[j]);
-    // free(options.ip_list);
-    // for (int i = 0; i < options.scan_count; i++) {
-    //     for (int j = 0; j < MAX_PORT; j++) {
-    //         if (options.status[i][j] != NULL) {
-    //             free(options.status[i][j]);
-    //         }
-    //     }
-    //     free(options.status[i]);
-    // }
-    // free(options.status);
     for(int i = 0; i < options.ip_count; i++){
         handle_ip_option_in_file(&i, &options);
         int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
