@@ -72,6 +72,7 @@ pcap_t *init_pcap(const char *interface) {
 
 void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     global_handle = handle;
+    stop_pcap = false;
     // Définir un timeout (exemple: 15 secondes)
     signal(SIGALRM, timeout_handler);
     alarm(5);  // Timeout de 15 secondes

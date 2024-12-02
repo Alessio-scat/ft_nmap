@@ -41,16 +41,22 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
         else
             excluded_state = "CLOSED";
         int excluded_count = 0;
+        int filtered_count = 0;
 
         // Comptage des ports dans l'état spécifié (par exemple, "CLOSED")
         for (int i = 0; i < options->portsTabSize; i++) {
             if (strcmp(options->status[technique][i], excluded_state) == 0) {
                 excluded_count++;
             }
+            if (strcmp(options->status[technique][i], "FILTERED") == 0) {
+                filtered_count++;
+            }
         }
         printf("\nScan type: %s\n", scan_name);
         if(excluded_count > 0)
             printf("Not shown: %d ports %s\n", excluded_count, excluded_state);
+        if(filtered_count > 10)
+            printf("Not shown: %d ports FILTERED\n", filtered_count);
         
         if (total_ports > 25) {
             const char *first_state = options->status[technique][0];
@@ -75,16 +81,19 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
             const char *port_status = options->status[technique][port - 1]; // Statut du port (via index)
 
             // Vérifier si le port doit être affiché
-            if (strcmp(port_status, excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)) {
-                const char *service_name = get_service_name(port);
+            if (strcmp(port_status, excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)){
+                if(filtered_count < 10 || strcmp(port_status, "FILTERED") != 0){
+                    const char *service_name = get_service_name(port);
 
-                // Afficher les informations du port
-                if (scan_type == 6) { // UDP
-                    printf("%d/udp    %-15s  %s\n", port, service_name, port_status);
-                } else { // TCP
-                    printf("%d/tcp    %-15s  %s\n", port, service_name, port_status);
+                    // Afficher les informations du port
+                    if (scan_type == 6) { // UDP
+                        printf("%d/udp    %-15s  %s\n", port, service_name, port_status);
+                    } else { // TCP
+                        printf("%d/tcp    %-15s  %s\n", port, service_name, port_status);
+                    }
                 }
             }
         }
+        printf("filtered %d\n", filtered_count);
     }
 }

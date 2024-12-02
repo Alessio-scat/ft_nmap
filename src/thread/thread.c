@@ -145,7 +145,7 @@ void *threaded_scan(void *arg) {
 
 
 
-void run_scans_by_techniques(ScanOptions *options) {
+void thread_smaller_than_scan(ScanOptions *options) {
     int num_threads = options->speedup; // Nombre de threads demandé
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
@@ -226,3 +226,94 @@ void run_scans_by_techniques(ScanOptions *options) {
 
     free(packet);
 }
+
+void run_scans_by_techniques(ScanOptions *options) {
+    int max_threads = options->scan_count * options->portsTabSize;
+    if (options->speedup > max_threads) {
+        printf("Nombre de threads demandé (%d) dépasse le maximum nécessaire (%d). Limitation automatique à %d threads.\n", 
+               options->speedup, max_threads, max_threads);
+        options->speedup = max_threads; // Réduire au maximum nécessaire
+    }
+    if (options->speedup < options->scan_count) {
+        thread_smaller_than_scan(options);
+        return;
+    }
+
+    int num_threads = options->speedup; // Nombre de threads demandé
+    pthread_t threads[num_threads];
+    ScanThreadData thread_data[num_threads];
+
+    char *packet = malloc(4096);
+    struct iphdr *iph = (struct iphdr *)packet;
+    struct sockaddr_in dest;
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = inet_addr(options->ip_address);
+
+    build_ip_header(iph, &dest, options);
+
+    // Calculer les ports par scan et les threads associés
+    int threads_per_scan = num_threads / options->scan_count;
+    int extra_threads = num_threads % options->scan_count;
+
+    printf("scan_count %d portsTabSize %d num_threads %d threads_per_scan %d extra_threads %d\n", 
+           options->scan_count, options->portsTabSize, num_threads, threads_per_scan, extra_threads);
+
+    int thread_index = 0;
+
+    for (int scan_index = 0; scan_index < options->scan_count; scan_index++) {
+        // Nombre de threads pour ce scan
+        int threads_for_this_scan = threads_per_scan + (scan_index < extra_threads ? 1 : 0);
+
+        // Ports par thread pour ce scan
+        int ports_per_thread = options->portsTabSize / threads_for_this_scan;
+        int extra_ports = options->portsTabSize % threads_for_this_scan;
+
+        int current_start_port = 0;
+
+        for (int i = 0; i < threads_for_this_scan; i++) {
+            thread_data[thread_index].thread_id = thread_index;
+            thread_data[thread_index].options = options;
+
+            thread_data[thread_index].packet = packet;
+            thread_data[thread_index].iph = iph;
+            thread_data[thread_index].dest = dest;
+
+            // Affecter le scan à ce thread
+            thread_data[thread_index].start_scan = scan_index;
+            thread_data[thread_index].end_scan = scan_index + 1;
+
+            // Calculer les plages de ports
+            thread_data[thread_index].start_port = current_start_port;
+            thread_data[thread_index].end_port = thread_data[thread_index].start_port + ports_per_thread;
+
+            // Ajouter les ports supplémentaires pour les premiers threads
+            if (i < extra_ports) {
+                thread_data[thread_index].end_port++;
+            }
+
+            // Mettre à jour le début de la prochaine plage
+            current_start_port = thread_data[thread_index].end_port;
+
+            // Afficher les plages pour le thread
+            printf("Thread %d: scans [%d, %d), ports [%d, %d)\n",
+                   thread_index, thread_data[thread_index].start_scan, thread_data[thread_index].end_scan,
+                   thread_data[thread_index].start_port, thread_data[thread_index].end_port);
+
+            // Créer le thread
+            if (pthread_create(&threads[thread_index], NULL, threaded_scan, &thread_data[thread_index]) != 0) {
+                perror("Failed to create thread");
+                exit(1);
+            }
+
+            thread_index++;
+        }
+    }
+
+    // Attendre que tous les threads terminent
+    for (int i = 0; i < num_threads; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    free(packet);
+}
+
