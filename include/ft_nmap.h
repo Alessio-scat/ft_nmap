@@ -21,6 +21,9 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
 
+extern bool stop_pcap;
+
+
 #define MAX_PORT 1024
 #define PORT_OPEN 1
 #define PORT_CLOSED 0
@@ -72,6 +75,21 @@ typedef struct {
     int port_status;      // Statut du port (ouvert, fermé, filtré)
 } pcap_data_t;
 
+typedef struct {
+    int thread_id;
+    ScanOptions *options;
+    int start_scan;  // Index du scan (type) de départ
+    int end_scan;    // Index du scan (type) de fin
+    int start_port;  // Port de départ
+    int end_port;    // Port de fin
+    int sock;        // Socket pré-initialisé
+    pcap_t *handle;  // Handle pcap pré-initialisé
+    char *packet;    // Buffer de paquet partagé
+    struct iphdr *iph; // Pointeur vers l'en-tête IP
+    struct sockaddr_in dest; // Adresse cible
+    int technique;
+} ScanThreadData;
+
 extern pcap_t *global_handle;
 extern ScanOptions *global_options;
 
@@ -86,9 +104,12 @@ void handle_ip_option_in_file(int *ip_index, ScanOptions *options);
 //scan
 void tcp_scan_all_ports(ScanOptions *options);
 void udp_scan_all_ports(ScanOptions *options);
+void *tcp_scan_all_ports_thread(void *arg);
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
 void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest);
 void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+pcap_t *init_pcap(const char *interface);
+void wait_for_responses(pcap_t *handle, ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);
@@ -106,6 +127,9 @@ const char* get_scan_name(int scan_code);
 void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options);
 void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
 int create_raw_socket();
+
+//thread
+void run_scans_by_techniques(ScanOptions *options);
 
 int create_udp_socket();
 void build_udp_header_udp(struct udphdr *udph, int target_port);

@@ -21,6 +21,7 @@ SRC			 			= main.c \
 							scan/packetHandler.c \
 							scan/build.c \
 							scan/send.c \
+							thread/thread.c \
 							utils/signal.c \
 							utils/free.c \
 

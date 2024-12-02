@@ -52,7 +52,7 @@ void parse_arguments(int ac, char **av, ScanOptions *options) {
         options->tabscan[2] = FIN;
         options->tabscan[3] = XMAS;
         options->tabscan[4] = ACK;
-         options->tabscan[5] = UDP;
+        options->tabscan[5] = UDP;
         options->scan_count = 6;
     }
 

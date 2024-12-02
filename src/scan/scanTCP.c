@@ -13,25 +13,25 @@ void timeout_handler(int signum) {
     }
 }
 
-void print_tcphdr(struct tcphdr *tcph) {
-    printf("=== En-tête TCP ===\n");
-    printf("Source Port: %d\n", ntohs(tcph->source));        // Port source
-    printf("Destination Port: %d\n", ntohs(tcph->dest));      // Port destination
-    printf("Sequence Number: %u\n", ntohl(tcph->seq));        // Numéro de séquence
-    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));  // Numéro d'accusé de réception
-    printf("Data Offset: %d\n", tcph->doff * 4);              // Longueur de l'en-tête TCP
-    printf("Flags: \n");
-    printf("   SYN: %d\n", tcph->syn);                        // Flag SYN
-    printf("   ACK: %d\n", tcph->ack);                        // Flag ACK
-    printf("   RST: %d\n", tcph->rst);                        // Flag RST
-    printf("   FIN: %d\n", tcph->fin);                        // Flag FIN
-    printf("   PSH: %d\n", tcph->psh);                        // Flag PSH
-    printf("   URG: %d\n", tcph->urg);                        // Flag URG
-    printf("Window Size: %d\n", ntohs(tcph->window));         // Taille de la fenêtre
-    printf("Checksum: 0x%x\n", ntohs(tcph->check));           // Checksum TCP
-    printf("Urgent Pointer: %d\n", tcph->urg_ptr);            // Pointeur urgent
-    printf("===================\n");
-}
+// void print_tcphdr(struct tcphdr *tcph) {
+//     printf("=== En-tête TCP ===\n");
+//     printf("Source Port: %d\n", ntohs(tcph->source));        // Port source
+//     printf("Destination Port: %d\n", ntohs(tcph->dest));      // Port destination
+//     printf("Sequence Number: %u\n", ntohl(tcph->seq));        // Numéro de séquence
+//     printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));  // Numéro d'accusé de réception
+//     printf("Data Offset: %d\n", tcph->doff * 4);              // Longueur de l'en-tête TCP
+//     printf("Flags: \n");
+//     printf("   SYN: %d\n", tcph->syn);                        // Flag SYN
+//     printf("   ACK: %d\n", tcph->ack);                        // Flag ACK
+//     printf("   RST: %d\n", tcph->rst);                        // Flag RST
+//     printf("   FIN: %d\n", tcph->fin);                        // Flag FIN
+//     printf("   PSH: %d\n", tcph->psh);                        // Flag PSH
+//     printf("   URG: %d\n", tcph->urg);                        // Flag URG
+//     printf("Window Size: %d\n", ntohs(tcph->window));         // Taille de la fenêtre
+//     printf("Checksum: 0x%x\n", ntohs(tcph->check));           // Checksum TCP
+//     printf("Urgent Pointer: %d\n", tcph->urg_ptr);            // Pointeur urgent
+//     printf("===================\n");
+// }
 
 pcap_t *init_pcap(const char *interface) {
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -72,27 +72,27 @@ pcap_t *init_pcap(const char *interface) {
 
 void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     global_handle = handle;
-
+    stop_pcap = false;
     // Définir un timeout (exemple: 15 secondes)
     signal(SIGALRM, timeout_handler);
     alarm(5);  // Timeout de 15 secondes
-
+    // printf("ici\n");
     // Capture des paquets en boucle jusqu'à expiration du délai
     while (!stop_pcap) {
+        // printf("sdfsdfsdfsdfsdfsdf\n");
         pcap_dispatch(handle, -1, packet_handler, (u_char *)options);
     }
+    
 
     // Réinitialiser et fermer pcap
-    alarm(0);
+    // alarm(0);
     global_handle = NULL;
 }
 
 void tcp_scan_all_ports(ScanOptions *options) {
     int sock; // Declare `sock` at the beginning of the function
-    int optval = 1;
-
     // Initialize pcap once for capturing responses
-    pcap_t *handle = init_pcap(options->local_interface);
+    // pcap_t *handle = init_pcap(options->local_interface);
 
     // Prepare the packet
     char packet[4096];
@@ -103,13 +103,12 @@ void tcp_scan_all_ports(ScanOptions *options) {
 
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
-
     // Loop through each scan type
     for (int i = 0; i < options->scan_count; i++) {
         stop_pcap = false;
         options->currentScan = i;
         options->scan_type = options->tabscan[i];
-        printf("%d\n", options->scan_type);
+        // printf("%d %d %d\n", options->scan_type, options->start_scan, options->end_scan);
 
         // Create appropriate socket and build packet headers
         if (options->scan_type == 6) {
@@ -120,13 +119,6 @@ void tcp_scan_all_ports(ScanOptions *options) {
             build_ip_header_udp(iph, &dest, options);
         } else {
             sock = create_raw_socket(); // Use raw socket for other scan types
-
-            // Set IP_HDRINCL for raw sockets
-            if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, &optval, sizeof(optval)) < 0) {
-                perror("Error setting IP_HDRINCL");
-                exit(1);
-            }
-            memset(packet, 0, sizeof(packet)); // Nettoyer le buffer
             build_ip_header(iph, &dest, options);
         }
 
@@ -137,10 +129,9 @@ void tcp_scan_all_ports(ScanOptions *options) {
 
         // Optional: Add a short delay between scans
         close(sock);
-        sleep(1);
     }
 
-    wait_for_responses(handle, options);
-    // Close the raw/UDP socket and pcap after all scans
-    pcap_close(handle);
+    // wait_for_responses(handle, options);
+    // // Close the raw/UDP socket and pcap after all scans
+    // pcap_close(handle);
 }

@@ -44,7 +44,7 @@ char *resolve_hostname_to_ip(const char *hostname, ScanOptions *options) {
 void handle_ip_option(int *i, int ac, char **av, ScanOptions *options) {
 
     // Parcourir les arguments suivants jusqu'à rencontrer un autre flag ou la fin des arguments
-    while (*i < ac && strncmp(av[*i + 1], "--", 2) != 0) {
+    while (*i + 1 < ac && strncmp(av[*i + 1], "--", 2) != 0) {
         char *input = av[*i + 1];
 
         // Ajoute l'IP ou le nom d'hôte à la liste des IP
@@ -59,7 +59,6 @@ void handle_ip_option(int *i, int ac, char **av, ScanOptions *options) {
             exit(1);
         }
         options->ip_count++;
-
         (*i)++;
     }
 
