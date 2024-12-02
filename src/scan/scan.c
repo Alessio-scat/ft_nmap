@@ -91,11 +91,8 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
 
 void tcp_scan_all_ports(ScanOptions *options) {
     int sock; // Declare `sock` at the beginning of the function
-    // Initialize pcap once for capturing responses
-    // pcap_t *handle = init_pcap(options->local_interface);
-
-    // Prepare the packet
     char packet[4096];
+    memset(packet, 0, 4096);
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
 
@@ -108,30 +105,16 @@ void tcp_scan_all_ports(ScanOptions *options) {
         stop_pcap = false;
         options->currentScan = i;
         options->scan_type = options->tabscan[i];
-        // printf("%d %d %d\n", options->scan_type, options->start_scan, options->end_scan);
-
         // Create appropriate socket and build packet headers
         if (options->scan_type == 6) {
             sock = create_udp_socket(); // Use UDP socket for type 6 scans
-
-            memset(packet, 0, sizeof(packet)); // Netooyer le buffer
-
             build_ip_header_udp(iph, &dest, options);
         } else {
             sock = create_raw_socket(); // Use raw socket for other scan types
             build_ip_header(iph, &dest, options);
         }
-
         // Send packets for the current scan type
         send_all_packets(sock, packet, iph, &dest, options);
-
-        // Wait for responses for the current scan type
-
-        // Optional: Add a short delay between scans
         close(sock);
     }
-
-    // wait_for_responses(handle, options);
-    // // Close the raw/UDP socket and pcap after all scans
-    // pcap_close(handle);
 }

@@ -5,14 +5,14 @@ void thread_smaller_than_scan(ScanOptions *options) {
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
 
-    char *packet = malloc(4096);
-    memset(packet, 0, 4096);
-    struct iphdr *iph = (struct iphdr *)packet;
+    // char *packet = malloc(4096);
+    // memset(packet, 0, 4096);
+    // struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
-    build_ip_header(iph, &dest, options);
+    // build_ip_header(iph, &dest, options);
 
     // Total de combinaisons (scans x ports)
     int total_combinations = options->scan_count * options->portsTabSize;
@@ -25,8 +25,8 @@ void thread_smaller_than_scan(ScanOptions *options) {
         thread_data[i].thread_id = i;
         thread_data[i].options = options;
 
-        thread_data[i].packet = packet;
-        thread_data[i].iph = iph;
+        // thread_data[i].packet = packet;
+        // thread_data[i].iph = iph;
         thread_data[i].dest = dest;
 
         // Calculer les combinaisons pour ce thread
@@ -80,7 +80,7 @@ void thread_smaller_than_scan(ScanOptions *options) {
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
     }
-    free(packet);
+    // free(packet);
 }
 
 void run_scans_by_techniques(ScanOptions *options) {
@@ -99,14 +99,14 @@ void run_scans_by_techniques(ScanOptions *options) {
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
 
-    char *packet = malloc(4096);
-    memset(packet, 0, 4096);
-    struct iphdr *iph = (struct iphdr *)packet;
+    // char *packet = malloc(4096);
+    // memset(packet, 0, 4096);
+    // struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
-    build_ip_header(iph, &dest, options);
+    // build_ip_header(iph, &dest, options);
 
     // Calculer les ports par scan et les threads associés
     int threads_per_scan = num_threads / options->scan_count;
@@ -128,8 +128,8 @@ void run_scans_by_techniques(ScanOptions *options) {
             thread_data[thread_index].thread_id = thread_index;
             thread_data[thread_index].options = options;
 
-            thread_data[thread_index].packet = packet;
-            thread_data[thread_index].iph = iph;
+            // thread_data[thread_index].packet = packet;
+            // thread_data[thread_index].iph = iph;
             thread_data[thread_index].dest = dest;
 
             // Affecter le scan à ce thread
@@ -171,6 +171,6 @@ void run_scans_by_techniques(ScanOptions *options) {
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
     }
-    free(packet);
+    // free(packet);
 }
 
