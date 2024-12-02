@@ -126,7 +126,6 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     if (options->scan_type == SYN) {  // Scan SYN
         if (tcph->syn == 1 && tcph->ack == 1) {
             os_detection(iph, options);
-        printf("opennnnnnnnnnnnn\n");
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
         } else if (tcph->rst == 1) {
             strcpy(options->status[options->currentScan][port - 1], "CLOSED");
@@ -179,10 +178,11 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
         int port = ntohs(udph->source); 
         options->scan_type = UDP;
         findCurrent(options);
-        if (port > 0 && port <= MAX_PORT)
+        if (port > 0 && port <= MAX_PORT){
+            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
+        }
     }
-
     // Mettre une alarme ou un délai si nécessaire
     alarm(5);
 }
