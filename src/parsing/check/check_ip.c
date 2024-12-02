@@ -21,7 +21,8 @@ int validate_ip_or_hostname(char *input) {
 }
 
 // Résoudre un nom de domaine en adresse IP
-char *resolve_hostname_to_ip(const char *hostname) {
+char *resolve_hostname_to_ip(const char *hostname, ScanOptions *options) {
+    (void)options;
     struct addrinfo hints, *res;
     struct sockaddr_in *ipv4;
     char *ip_address = NULL;
@@ -73,8 +74,23 @@ void handle_ip_option_in_file(int *ip_index, ScanOptions *options) {
     while (*ip_index >= 0 && *ip_index < options->ip_count) {
         char *selected_ip = options->ip_list[*ip_index];
 
-        // Tente de stocker l'IP ou le nom d'hôte
+        // Libérer l'ancienne mémoire allouée à ip_host
+        if (options->ip_host) {
+            free(options->ip_host);
+            options->ip_host = NULL;
+        }
+        // Libérer l'ancienne mémoire allouée à ip_address
+        if (options->ip_address) {
+            free(options->ip_address);
+            options->ip_address = NULL;
+        }
+
+        // Stocker l'IP ou le nom d'hôte
         options->ip_host = strdup(selected_ip);
+        if (!options->ip_host) {
+            fprintf(stderr, "Error: Memory allocation failed for ip_host.\n");
+            exit(1);
+        }
 
         // Vérifie si l'entrée est une adresse IP valide
         struct sockaddr_in sa;
@@ -83,7 +99,7 @@ void handle_ip_option_in_file(int *ip_index, ScanOptions *options) {
             options->ip_address = strdup(selected_ip);
         } else {
             // Résolution du nom de domaine
-            options->ip_address = resolve_hostname_to_ip(selected_ip);
+            options->ip_address = resolve_hostname_to_ip(selected_ip, options);
         }
 
         if (options->ip_address == NULL) {

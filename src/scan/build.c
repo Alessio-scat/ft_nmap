@@ -14,6 +14,15 @@ int create_raw_socket() {
     return sockfd;
 }
 
+int create_udp_socket() {
+    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (sockfd < 0) {
+        perror("Error creating UDP socket");
+        exit(1);
+    }
+    return sockfd;
+}
+
 // Fonction pour construire l'en-tête IP en utilisant ScanOptions
 void build_ip_header(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options) {
     iph->ihl = 5;
@@ -67,3 +76,28 @@ void build_tcp_header(struct tcphdr *tcph, int target_port, ScanOptions *options
     tcph->check = 0;  // Le checksum sera calculé plus tard
     tcph->urg_ptr = 0;  // Pointeur urgent désactivé
 }
+
+void build_ip_header_udp(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options) {
+    iph->ihl = 5;
+    iph->version = 4;
+    iph->tos = 0;
+    iph->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr));
+    iph->id = htonl(54321);
+    iph->frag_off = 0;
+    iph->ttl = 64;
+    iph->protocol = IPPROTO_UDP;
+    iph->check = 0;
+    iph->saddr = inet_addr(options->local_ip);
+    iph->daddr = dest->sin_addr.s_addr;
+
+    // Calcul du checksum pour l'en-tête IP
+    iph->check = checksum((unsigned short *)iph, sizeof(struct iphdr));
+}
+
+void build_udp_header_udp(struct udphdr *udph, int target_port) {
+    udph->source = htons(rand() % 65535 + 1024);
+    udph->dest = htons(target_port);
+    udph->len = htons(sizeof(struct udphdr));
+    udph->check = 0;
+}
+

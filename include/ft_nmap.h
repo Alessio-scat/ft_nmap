@@ -90,12 +90,8 @@ typedef struct {
     int technique;
 } ScanThreadData;
 
-// typedef struct {
-//     ScanOptions *options; // Pointeur vers les options globales
-//     int start_port;       // Début de la plage de ports
-//     int end_port;         // Fin de la plage de ports
-// } ScanThreadData;
-
+extern pcap_t *global_handle;
+extern ScanOptions *global_options;
 
 
 /*
@@ -117,8 +113,8 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options);
 
 //utils.c
 unsigned short checksum(void *b, int len);
-char *get_local_ip(int use_loopback);
-char *get_local_interface(int use_loopback);
+char *get_local_ip(int use_loopback, ScanOptions *options);
+char *get_local_interface(int use_loopback, ScanOptions *options);
 void print_scan_result(int port, const char *service, const char *state);
 void print_help();
 void reset_status(ScanOptions *options, int scan_count, int max_ports);
@@ -138,5 +134,13 @@ void run_scans_by_techniques(ScanOptions *options);
 int create_udp_socket();
 void build_udp_header_udp(struct udphdr *udph, int target_port);
 void build_ip_header_udp(struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options);
+
+//signal
+void signal_handler(int signum);
+
+//free
+void free_nmap(ScanOptions *options);
+
+void cleanup_options(ScanOptions *options);
 
 #endif

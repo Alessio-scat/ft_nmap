@@ -66,7 +66,7 @@ pcap_t *init_pcap(const char *interface) {
 
     pcap_freecode(&fp);  // Libérer la mémoire du filtre BPF
     printf("Interface %s ouverte avec un filtre TCP.\n", interface);
-
+    global_handle = handle;
     return handle;
 }
 
@@ -98,6 +98,9 @@ void tcp_scan_all_ports(ScanOptions *options) {
     char packet[4096];
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
+
+    memset(&dest, 0, sizeof(dest));
+
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
     // Loop through each scan type
@@ -110,6 +113,9 @@ void tcp_scan_all_ports(ScanOptions *options) {
         // Create appropriate socket and build packet headers
         if (options->scan_type == 6) {
             sock = create_udp_socket(); // Use UDP socket for type 6 scans
+
+            memset(packet, 0, sizeof(packet)); // Netooyer le buffer
+
             build_ip_header_udp(iph, &dest, options);
         } else {
             sock = create_raw_socket(); // Use raw socket for other scan types

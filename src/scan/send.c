@@ -33,38 +33,6 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     free(pseudogram);
 }
 
-// void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options) {
-
-//     for (int j = 0; j < options->portsTabSize; j++) {
-//         int target_port = options->portsTab[j];
-//         // printf("%d\n", options->portsTabSize);
-//         // printf("%d\n", target_port);
-//         dest->sin_port = htons(target_port);
-
-//         if (options->scan_type == UDP){
-//             memset(packet, 0, 4096);
-
-//             // Construire les en-têtes IP et UDP
-//             struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
-
-//             build_udp_header_udp(udph, target_port);
-
-//             // Envoyer le paquet personnalisé
-//             if (sendto(sock, packet, ntohs(iph->tot_len), 0, (struct sockaddr *)&dest, sizeof(dest)) < 0) {
-//                 perror("Failed to send UDP packet");
-//             }
-//         }else{
-//             // Construire l'en-tête TCP pour chaque port
-//             build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
-
-//             // Envoyer le paquet SYN
-//             send_packet(sock, packet, iph, dest);
-//         }
-
-//         // Petit délai entre les envois pour ne pas saturer le réseau
-//         usleep(1000);
-//     }
-// }
 
 void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest, ScanOptions *options) {
     for (int j = 0; j < options->portsTabSize; j++) {
