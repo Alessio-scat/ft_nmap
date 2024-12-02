@@ -57,7 +57,8 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
             printf("Not shown: %d ports %s\n", excluded_count, excluded_state);
         if(filtered_count > 10)
             printf("Not shown: %d ports FILTERED\n", filtered_count);
-        
+        if(filtered_count + excluded_count == options->portsTabSize && filtered_count > 10)
+            continue;
         if (total_ports > 25) {
             const char *first_state = options->status[technique][0];
             int all_ports_identical = 1;
@@ -94,6 +95,5 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
                 }
             }
         }
-        printf("filtered %d\n", filtered_count);
     }
 }

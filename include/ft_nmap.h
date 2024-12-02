@@ -130,6 +130,8 @@ int create_raw_socket();
 
 //thread
 void run_scans_by_techniques(ScanOptions *options);
+void build_tcp_header_thread(struct tcphdr *tcph, int target_port, int scan_type);
+void *threaded_scan(void *arg);
 
 int create_udp_socket();
 void build_udp_header_udp(struct udphdr *udph, int target_port);

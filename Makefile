@@ -15,13 +15,15 @@ SRC			 			= main.c \
 							parsing/check/check_ports.c \
 							parsing/check/check_scan.c \
 							parsing/check/check_speedup.c \
-							scan/scanTCP.c \
+							scan/scan.c \
 							scan/utils.c \
 							scan/print.c \
 							scan/packetHandler.c \
 							scan/build.c \
 							scan/send.c \
 							thread/thread.c \
+							thread/thread_scan.c \
+							thread/thread_build.c \
 							utils/signal.c \
 							utils/free.c \
 

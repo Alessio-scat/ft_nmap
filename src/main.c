@@ -66,7 +66,6 @@ int main(int ac, char **av) {
         options.portsTabSize = 1024;
     }
     initialize_status(&options, options.scan_count, MAX_PORT);
-
     for(int i = 0; i < options.ip_count; i++){
         handle_ip_option_in_file(&i, &options);
         int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
