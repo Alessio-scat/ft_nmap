@@ -20,6 +20,7 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
     regex_t regex;
     int ret = regcomp(&regex, "^([0-9]+(-[0-9]+)?)(,[0-9]+(-[0-9]+)?)*$", REG_EXTENDED);
     if (ret) {
+        cleanup_options(options);
         fprintf(stderr, "Error: Failed to compile regex for port validation.\n");
         return 0;
     }
@@ -91,10 +92,12 @@ void handle_ports_option(int *i, int ac, char **av, ScanOptions *options) {
             qsort(options->portsTab, options->portsTabSize, sizeof(int), comp);
             (*i)++;
         } else {
+            cleanup_options(options);
             fprintf(stderr, "Error: Invalid port range or list: %s\n", av[*i + 1]);
             exit(1);
         }
     } else {
+        cleanup_options(options);
         fprintf(stderr, "Error: --ports option requires a port range or list.\n");
         exit(1);
     }

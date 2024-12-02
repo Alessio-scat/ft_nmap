@@ -16,12 +16,13 @@ SRC			 			= main.c \
 							parsing/check/check_scan.c \
 							parsing/check/check_speedup.c \
 							scan/scanTCP.c \
-							scan/scanUDP.c \
 							scan/utils.c \
 							scan/print.c \
 							scan/packetHandler.c \
 							scan/build.c \
 							scan/send.c \
+							utils/signal.c \
+							utils/free.c \
 
 OBJECTS			    	= $(SRC:%.c=$(BUILD_DIR)%.o)
 	
