@@ -29,7 +29,7 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     tcph->check = checksum((unsigned short *)pseudogram, psize);
 
     if (sendto(sock, packet, iph->tot_len, 0, (struct sockaddr *)dest, sizeof(*dest)) < 0) {
-        perror("Échec de l'envoi du paquet");
+        perror("Failed to send packet");
     }
     free(pseudogram);
 }

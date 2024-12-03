@@ -69,7 +69,7 @@ char *get_local_interface(int use_loopback, ScanOptions *options) {
     char *local_interface = NULL;
 
     if (pcap_findalldevs(&alldevs, errbuf) == -1) {
-        fprintf(stderr, "Erreur lors de la récupération des interfaces : %s\n", errbuf);
+        fprintf(stderr, "Error retrieving interfaces: %s\n", errbuf);
         return NULL;
     }
 
@@ -89,7 +89,7 @@ char *get_local_interface(int use_loopback, ScanOptions *options) {
     pcap_freealldevs(alldevs);
 
     if (local_interface == NULL) {
-        fprintf(stderr, "Aucune interface réseau active trouvée\n");
+        fprintf(stderr, "No active network interface found\n");
     }
 
     return local_interface;
