@@ -2,7 +2,7 @@
 
 int validate_scan_type(char *scan_type) {
     if (strcmp(scan_type, "SYN") == 0) return SYN;
-    if (strcmp(scan_type, "NULL") == 0) return SCAN_NULL; // Remplace NULL par SCAN_NULL
+    if (strcmp(scan_type, "NULL") == 0) return SCAN_NULL; 
     if (strcmp(scan_type, "FIN") == 0) return FIN;
     if (strcmp(scan_type, "XMAS") == 0) return XMAS;
     if (strcmp(scan_type, "ACK") == 0) return ACK;
@@ -14,16 +14,14 @@ void handle_scan_option(int *i, int ac, char **av, ScanOptions *options) {
     int scan_count = 0;
 
     while (*i + 1 < ac && scan_count < MAX_SCANS) {
-        // Vérifie si l'argument commence par "--"
-        if (strncmp(av[*i + 1], "--", 2) == 0) {
-            // Quitte la boucle si un argument commence par "--" (indique une autre option)
+        // check if arg start "--"
+        if (strncmp(av[*i + 1], "--", 2) == 0)
             break;
-        }
 
         int scan_code = validate_scan_type(av[*i + 1]);
         if (scan_code) {
 
-            // Vérifie si ce type de scan est déjà dans tabscan
+            // check if the scan is already in tabscan
             bool already_exists = false;
             for (int j = 0; j < scan_count; j++) {
                 if (options->tabscan[j] == scan_code) {
