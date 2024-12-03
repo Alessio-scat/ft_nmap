@@ -46,7 +46,7 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
         struct tcphdr *tcph = (struct tcphdr *)((char *)inner_iph + inner_ip_header_length);
         findScanType(tcph, options);
  
-        if (icmp_header->type == 3) { // Type 3 : Destination Unreachable
+        if (icmp_header->type == 3) {
             int code = icmp_header->code;
             if (code == 1 || code == 2 || code == 3 || code == 9 || code == 10 || code == 13) {
                 int port = ntohs(((struct tcphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr)))->dest);
@@ -82,7 +82,7 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
     }
 }
 
-// Fonction pour traiter les paquets TCP
+// Function to process TCP packets
 void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);
     int port = ntohs(tcph->source);
@@ -91,13 +91,12 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         return;
 
     findScanType(tcph, options);
-    // Vérifier si le port a déjà un statut final (ex. CLOSED)
+    // Check if the port already has a final status (eg. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "UNFILTERED") == 0) {
-        return; // Ne pas modifier un port qui a déjà un statut final
+        return; 
     }
-    // Traitement en fonction du type de scan
     if (options->scan_type == SYN) {  // Scan SYN
         if (tcph->syn == 1 && tcph->ack == 1) {
             os_detection(iph, options);
