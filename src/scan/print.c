@@ -36,14 +36,13 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
         const char *scan_name = get_scan_name(scan_type);
         if(options->tabscan[technique] == ACK)
             excluded_state = "UNFILTERED";
-        else if(options->tabscan[technique] == UDP)
-            excluded_state = "open|filtered";
         else
             excluded_state = "CLOSED";
         int excluded_count = 0;
         int filtered_count = 0;
+        int open_filtered_count = 0;
 
-        // Comptage des ports dans l'état spécifié (par exemple, "CLOSED")
+        // Comptage des ports dans les états spécifiés
         for (int i = 0; i < options->portsTabSize; i++) {
             if (strcmp(options->status[technique][i], excluded_state) == 0) {
                 excluded_count++;
@@ -51,14 +50,12 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
             if (strcmp(options->status[technique][i], "FILTERED") == 0) {
                 filtered_count++;
             }
+            if (strcmp(options->status[technique][i], "OPEN|FILTERED") == 0) {
+                open_filtered_count++;
+            }
         }
+        // Affichage des résultats
         printf("\nScan type: %s\n", scan_name);
-        if(excluded_count > 0)
-            printf("Not shown: %d ports %s\n", excluded_count, excluded_state);
-        if(filtered_count > 10)
-            printf("Not shown: %d ports FILTERED\n", filtered_count);
-        if(filtered_count + excluded_count == options->portsTabSize && filtered_count > 10)
-            continue;
         if (total_ports > 25) {
             const char *first_state = options->status[technique][0];
             int all_ports_identical = 1;
@@ -74,6 +71,17 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
                 continue;
             }
         }
+        if (excluded_count > 0) {
+            printf("Not shown: %d ports %s\n", excluded_count, excluded_state);
+        }
+        if (filtered_count > 20) {
+            printf("Not shown: %d ports FILTERED\n", filtered_count);
+        }
+        if (open_filtered_count > 20) {
+            printf("Not shown: %d ports OPEN|FILTERED\n", open_filtered_count);
+        }
+        if(filtered_count + excluded_count + open_filtered_count == options->portsTabSize && (filtered_count > 20 || open_filtered_count > 20))
+            continue;
         printf("PORT    SERVICE         STATE\n");
 
         // Parcourir les ports définis dans portsTab
@@ -83,7 +91,8 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
 
             // Vérifier si le port doit être affiché
             if (strcmp(port_status, excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)){
-                if(filtered_count < 10 || strcmp(port_status, "FILTERED") != 0){
+                if ((filtered_count < 20 || strcmp(port_status, "FILTERED") != 0) &&
+                    (open_filtered_count < 20 || strcmp(port_status, "OPEN|FILTERED") != 0)){
                     const char *service_name = get_service_name(port);
 
                     // Afficher les informations du port

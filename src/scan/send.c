@@ -16,6 +16,10 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     // Taille totale pour le calcul du checksum (pseudo-header + en-tête TCP)
     int psize = sizeof(psh) + sizeof(struct tcphdr);
     char *pseudogram = malloc(psize);
+    if (pseudogram == NULL) {
+        fprintf(stderr, "Error: Memory allocation failed for pseudogram\n");
+        exit(EXIT_FAILURE);
+    }
 
     // Copier le pseudo-header et l'en-tête TCP dans le buffer pour le calcul
     memcpy(pseudogram, (char *)&pshdr, sizeof(psh));
