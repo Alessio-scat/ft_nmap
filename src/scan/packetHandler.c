@@ -164,6 +164,7 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
     else if (iph->protocol == IPPROTO_TCP)
         handle_tcp_packet(iph, packet, options);
     else if (iph->protocol == IPPROTO_UDP) {
+        // skip Ethernet and Ip header
         struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
         int port = ntohs(udph->source); 
         options->scan_type = UDP;
