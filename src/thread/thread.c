@@ -5,14 +5,9 @@ void thread_smaller_than_scan(ScanOptions *options) {
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
 
-    // char *packet = malloc(4096);
-    // memset(packet, 0, 4096);
-    // struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
-
-    // build_ip_header(iph, &dest, options);
 
     // Total de combinaisons (scans x ports)
     int total_combinations = options->scan_count * options->portsTabSize;
@@ -24,9 +19,6 @@ void thread_smaller_than_scan(ScanOptions *options) {
     for (int i = 0; i < num_threads; i++) {
         thread_data[i].thread_id = i;
         thread_data[i].options = options;
-
-        // thread_data[i].packet = packet;
-        // thread_data[i].iph = iph;
         thread_data[i].dest = dest;
 
         // Calculer les combinaisons pour ce thread
@@ -60,16 +52,16 @@ void thread_smaller_than_scan(ScanOptions *options) {
         }
         if(thread_data[i].start_scan == thread_data[i].end_scan)
             thread_data[i].end_scan++;
-        printf("Thread %d: scans [", i);
-            for (int scan_id = thread_data[i].start_scan; scan_id < thread_data[i].end_scan; scan_id++) {
-                printf("%s", get_scan_name(options->tabscan[scan_id])); // Afficher le nom du scan
-                if (scan_id < thread_data[i].end_scan - 1) {
-                    printf(", "); // Ajouter une virgule entre les noms si plusieurs scans
-                }
-            }
-        printf("], ports [%d, %d)\n", 
-            thread_data[i].start_port, 
-            thread_data[i].end_port);
+        // printf("Thread %d: scans [", i);
+        //     for (int scan_id = thread_data[i].start_scan; scan_id < thread_data[i].end_scan; scan_id++) {
+        //         printf("%s", get_scan_name(options->tabscan[scan_id]));
+        //         if (scan_id < thread_data[i].end_scan - 1) {
+        //             printf(", ");
+        //         }
+        //     }
+        // printf("], ports [%d, %d)\n", 
+        //     thread_data[i].start_port, 
+        //     thread_data[i].end_port);
 
         // Créer le thread
         if (pthread_create(&threads[i], NULL, threaded_scan, &thread_data[i]) != 0) {
@@ -80,7 +72,6 @@ void thread_smaller_than_scan(ScanOptions *options) {
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
     }
-    // free(packet);
 }
 
 void run_scans_by_techniques(ScanOptions *options) {
@@ -95,18 +86,13 @@ void run_scans_by_techniques(ScanOptions *options) {
         return;
     }
 
-    int num_threads = options->speedup; // Nombre de threads demandé
+    int num_threads = options->speedup; 
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
 
-    // char *packet = malloc(4096);
-    // memset(packet, 0, 4096);
-    // struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
-
-    // build_ip_header(iph, &dest, options);
 
     // Calculer les ports par scan et les threads associés
     int threads_per_scan = num_threads / options->scan_count;
@@ -128,8 +114,6 @@ void run_scans_by_techniques(ScanOptions *options) {
             thread_data[thread_index].thread_id = thread_index;
             thread_data[thread_index].options = options;
 
-            // thread_data[thread_index].packet = packet;
-            // thread_data[thread_index].iph = iph;
             thread_data[thread_index].dest = dest;
 
             // Affecter le scan à ce thread
@@ -148,16 +132,16 @@ void run_scans_by_techniques(ScanOptions *options) {
             // Mettre à jour le début de la prochaine plage
             current_start_port = thread_data[thread_index].end_port;
 
-            printf("Thread %d: scans [", thread_index);
-            for (int scan_id = thread_data[thread_index].start_scan; scan_id < thread_data[thread_index].end_scan; scan_id++) {
-                printf("%s", get_scan_name(options->tabscan[scan_id])); // Afficher le nom du scan
-                if (scan_id < thread_data[thread_index].end_scan - 1) {
-                    printf(", "); // Ajouter une virgule entre les noms si plusieurs scans
-                }
-            }
-            printf("], ports [%d, %d)\n", 
-                thread_data[thread_index].start_port, 
-                thread_data[thread_index].end_port);
+            // printf("Thread %d: scans [", thread_index);
+            // for (int scan_id = thread_data[thread_index].start_scan; scan_id < thread_data[thread_index].end_scan; scan_id++) {
+            //     printf("%s", get_scan_name(options->tabscan[scan_id]));
+            //     if (scan_id < thread_data[thread_index].end_scan - 1) {
+            //         printf(", ");
+            //     }
+            // }
+            // printf("], ports [%d, %d)\n", 
+            //     thread_data[thread_index].start_port, 
+            //     thread_data[thread_index].end_port);
 
             // Créer le thread
             if (pthread_create(&threads[thread_index], NULL, threaded_scan, &thread_data[thread_index]) != 0) {
@@ -171,6 +155,5 @@ void run_scans_by_techniques(ScanOptions *options) {
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
     }
-    // free(packet);
 }
 

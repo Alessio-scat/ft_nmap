@@ -15,8 +15,6 @@ void print_starting_message() {
     
     // Formater la date et l'heure (2024-10-07 17:42 CEST)
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M %Z", local_time);
-
-    // Afficher le message de démarrage
     printf("Starting ft_nmap at %s\n", time_str);
 }
 
@@ -28,7 +26,7 @@ const char* get_scan_name(int scan_code) {
         case XMAS: return "XMAS";
         case ACK: return "ACK";
         case UDP: return "UDP";
-        default: return "UNKNOWN"; // Pour gérer des cas non définis
+        default: return "UNKNOWN";
     }
 }
 
@@ -37,7 +35,7 @@ void print_scan_types(ScanOptions *options) {
     for (int i = 0; i < options->scan_count; i++) {
         printf("%s", get_scan_name(options->tabscan[i]));
         if (i < options->scan_count - 1) {
-            printf(", "); // Ajouter une virgule entre les types de scan
+            printf(", ");
         }
     }
     printf("\n");
@@ -53,9 +51,8 @@ int main(int ac, char **av) {
 
     // Capturer le temps de début
     struct timeval start, end;
-    gettimeofday(&start, NULL);  // Temps de début
+    gettimeofday(&start, NULL);
 
-    // Parsing des arguments et configuration
     parse_arguments(ac, av, &options);
     if (options.flag_ports == 0) {
         // Remplir options->portsTab avec les valeurs de 1 à 1024
@@ -89,9 +86,7 @@ int main(int ac, char **av) {
     // free_nmap(&options);
     cleanup_options(&options);
 
-    
-    // Capturer le temps de fin
-    gettimeofday(&end, NULL);  // Temps de fin
+    gettimeofday(&end, NULL);
 
     // Calculer le temps écoulé (en secondes et microsecondes)
     double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;

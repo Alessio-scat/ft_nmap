@@ -60,8 +60,6 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
         }
     }
     else{
-        // struct iphdr *inner_iph = (struct iphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr));
-        // int inner_ip_header_length = inner_iph->ihl * 4;
         struct udphdr *udph = (struct udphdr *)((u_char *)inner_iph + inner_ip_header_length);
         int port = ntohs(udph->dest);
         options->scan_type = UDP;
@@ -87,26 +85,6 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
     }
 }
 
-void print_tcphdr(struct tcphdr *tcph) {
-    printf("===== TCP Header =====\n");
-    printf("Source Port: %u\n", ntohs(tcph->source));
-    printf("Destination Port: %u\n", ntohs(tcph->dest));
-    printf("Sequence Number: %u\n", ntohl(tcph->seq));
-    printf("Acknowledgment Number: %u\n", ntohl(tcph->ack_seq));
-    printf("Data Offset: %u (Header Length: %u bytes)\n", tcph->doff, tcph->doff * 4);
-    printf("Flags:\n");
-    printf("  SYN: %d\n", tcph->syn);
-    printf("  ACK: %d\n", tcph->ack);
-    printf("  FIN: %d\n", tcph->fin);
-    printf("  RST: %d\n", tcph->rst);
-    printf("  PSH: %d\n", tcph->psh);
-    printf("  URG: %d\n", tcph->urg);
-    printf("Window Size: %u\n", ntohs(tcph->window));
-    printf("Checksum: 0x%x\n", ntohs(tcph->check));
-    printf("Urgent Pointer: %u\n", ntohs(tcph->urg_ptr));
-    printf("======================\n");
-}
-
 // Fonction pour traiter les paquets TCP
 void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);
@@ -115,7 +93,6 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         return; // Ignorer les ports hors limites
     }
     findScanType(tcph, options);
-    // printf("port %d scan %d\n", port, options->scan_type);
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
         strcmp(options->status[options->currentScan][port - 1], "OPEN") == 0 ||
@@ -132,18 +109,16 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
         }
     } else if (options->scan_type == SCAN_NULL || options->scan_type == FIN || options->scan_type == XMAS) {  // Scans FIN, NULL, XMAS
         if (tcph->rst == 1) {
+            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "CLOSED");
         } else {
-            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "OPEN|FILTERED");
         }
     } else if (options->scan_type == ACK) {  // Scan ACK
         if (tcph->rst == 1) {
-            // printf("unfiltred %d\n", port);
+            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "UNFILTERED");
         } else {
-            // printf("filtred %d\n", port);
-            os_detection(iph, options);
             strcpy(options->status[options->currentScan][port - 1], "FILTERED");
         }
     }
@@ -164,9 +139,7 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
     if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
         // Ignorer les paquets provenant d'autres IPs
         return;
-    }
-    // Gérer le TTL de la cible si nécessaire
-    
+    }  
 
     // Appeler les fonctions appropriées en fonction du protocole
     if (iph->protocol == IPPROTO_ICMP) {
@@ -183,6 +156,5 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
             strcpy(options->status[options->currentScan][port - 1], "OPEN");
         }
     }
-    // Mettre une alarme ou un délai si nécessaire
     alarm(5);
 }
