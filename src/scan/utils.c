@@ -131,7 +131,7 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
             }
 
             if (options->tabscan[i] == 6) {
-                strncpy(options->status[i][j], "open|filtered", 14);
+                strncpy(options->status[i][j], "OPEN|FILTERED", 14);
                 options->status[i][j][14] = '\0';
             } else if (options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4) {
                 strncpy(options->status[i][j], "OPEN|FILTERED", 14);
@@ -148,7 +148,7 @@ void reset_status(ScanOptions *options, int scan_count, int max_ports) {
     for (int i = 0; i < scan_count; i++) {
         for (int j = 0; j < max_ports; j++) {
             if (options->tabscan[i] == 6) {
-                strcpy(options->status[i][j], "open|filtered");
+                strcpy(options->status[i][j], "OPEN|FILTERED");
             } else if (options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4) {
                 strcpy(options->status[i][j], "OPEN|FILTERED");
             } else {

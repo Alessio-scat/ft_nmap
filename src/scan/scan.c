@@ -57,10 +57,6 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
     while (!stop_pcap) {
         pcap_dispatch(handle, -1, packet_handler, (u_char *)options);
     }
-    
-
-    // Réinitialiser et fermer pcap
-    // alarm(0);
     global_handle = NULL;
 }
 
