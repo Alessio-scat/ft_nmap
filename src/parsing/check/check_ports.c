@@ -3,16 +3,17 @@
 /*
     strchr: Finds the first occurrence of a character in a string.
     sscanf: Parses formatted data from a string into variables.
+    strtok: divides a string into segments ("tokens") based on one or more delimiters.
 */
 
 // Fonction pour vérifier si un port est déjà dans portsTab
 int is_port_in_list(int *ports, int num_ports, int port) {
     for (int i = 0; i < num_ports; i++) {
         if (ports[i] == port) {
-            return 1; // Le port est déjà dans la liste
+            return 1; // port already list
         }
     }
-    return 0; // Le port n'est pas dans la liste
+    return 0; // port not in the list
 }
 
 // Fonction pour valider, parser et stocker les ports
@@ -28,15 +29,15 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
     ret = regexec(&regex, ports, 0, NULL, 0);
     regfree(&regex);
 
-    if (ret != 0) {
-        return 0; // Format des ports non valide
-    }
+    if (ret != 0)
+        return 0;
 
     // Split and validate each port/range
     char *ports_copy = strdup(ports);
     char *token = strtok(ports_copy, ",");
-    options->portsTabSize = 0; // Réinitialise la taille des ports
+    options->portsTabSize = 0;
 
+    // Loop through each token to process individual ports or ranges
     while (token != NULL) {
         int start, end;
 
@@ -46,7 +47,8 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
             return 0;
         }
 
-        if (strchr(token, '-') != NULL) { // Gérer les plages comme "5-15"
+        // Handle ranges like "5-15"
+        if (strchr(token, '-') != NULL) { 
             sscanf(token, "%d-%d", &start, &end);
             if (start < 1 || end > MAX_PORT || start > end) {
                 free(ports_copy);
@@ -57,12 +59,13 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
                     options->portsTab[options->portsTabSize++] = i;
                 }
             }
-        } else { // Gérer les ports individuels comme "80"
+        } else { // // Handle single ports like "80"
             start = atoi(token);
             if (start < 1 || start > MAX_PORT) {
                 free(ports_copy);
                 return 0;
             }
+            // Add the port to portsTab if it's not already present
             if (!is_port_in_list(options->portsTab, options->portsTabSize, start)) {
                 options->portsTab[options->portsTabSize++] = start;
             }
@@ -71,7 +74,7 @@ int validate_and_parse_ports(const char *ports, ScanOptions *options) {
     }
 
     free(ports_copy);
-    return 1; // Ports valides et stockés dans portsTab
+    return 1; // Ports valides ok
 }
 
 int comp (const void * elem1, const void * elem2) 

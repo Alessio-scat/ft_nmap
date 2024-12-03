@@ -38,7 +38,7 @@ void parse_file(char *filename, ScanOptions *options) {
 
     char line[256];
     while (fgets(line, sizeof(line), file)) {
-        trim_whitespace(line); // Nettoie les espaces et retours à la ligne
+        trim_whitespace(line);
         if (strlen(line) == 0)
             continue; // skip lign empty
 

@@ -45,17 +45,14 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
     if (inner_iph->protocol == IPPROTO_TCP) {
         struct tcphdr *tcph = (struct tcphdr *)((char *)inner_iph + inner_ip_header_length);
         findScanType(tcph, options);
-        // Vérifier le type et le code ICMP pour déterminer si le port est filtré
+ 
         if (icmp_header->type == 3) { // Type 3 : Destination Unreachable
             int code = icmp_header->code;
             if (code == 1 || code == 2 || code == 3 || code == 9 || code == 10 || code == 13) {
                 int port = ntohs(((struct tcphdr *)(packet + 14 + iph->ihl * 4 + sizeof(struct icmphdr)))->dest);
                 
-                // Vérifier que le port est dans les limites
-                if (port > 0 && port <= MAX_PORT) {
-                    // Marquer le port comme filtré
+                if (port > 0 && port <= MAX_PORT)
                     strcpy(options->status[options->currentScan][port - 1], "FILTERED");
-                }
             }
         }
     }
@@ -72,13 +69,13 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
                     }
                     break;
 
-                case 1: case 2: case 9: case 10: case 13:  // Autres erreurs ICMP "Unreachable"
+                case 1: case 2: case 9: case 10: case 13:
                     if (port > 0 && port <= MAX_PORT)
                         strcpy(options->status[options->currentScan][port - 1], "FILTERED");
                     break;
 
                 default:
-                    printf("Autre type de réponse ICMP non pris en charge pour le port : %d\n", port);
+                    printf("Other ICMP response type not supported for port : %d\n", port);
                     break;
             }
         }
@@ -89,9 +86,10 @@ void handle_icmp_packet(const struct iphdr *iph, const u_char *packet, ScanOptio
 void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOptions *options) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + 14 + iph->ihl * 4);
     int port = ntohs(tcph->source);
-    if (port <= 0 || port > MAX_PORT) {
-        return; // Ignorer les ports hors limites
-    }
+
+    if (port <= 0 || port > MAX_PORT)
+        return;
+
     findScanType(tcph, options);
     // Vérifier si le port a déjà un statut final (ex. CLOSED)
     if (strcmp(options->status[options->currentScan][port - 1], "CLOSED") == 0 ||
@@ -124,29 +122,25 @@ void handle_tcp_packet(const struct iphdr *iph, const u_char *packet, ScanOption
     }
 }
 
-// Fonction principale de gestion des paquets
+// Manage packets
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     (void)pkthdr;
-    // Récupération des données utilisateur (ScanOptions)
     ScanOptions *options = (ScanOptions *)user_data;
-
-    // Sauter l'en-tête Ethernet (14 octets)
     struct iphdr *iph = (struct iphdr *)(packet + 14);
-    
-    // Vérifier si le paquet provient de l'IP cible
     struct in_addr source_addr;
     source_addr.s_addr = iph->saddr;
-    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
-        // Ignorer les paquets provenant d'autres IPs
-        return;
-    }  
 
-    // Appeler les fonctions appropriées en fonction du protocole
-    if (iph->protocol == IPPROTO_ICMP) {
+    // Ignore chunks other IP
+    if (strcmp(inet_ntoa(source_addr), options->ip_address) != 0) {
+        return;
+    }
+    
+    if (iph->protocol == IPPROTO_ICMP)
         handle_icmp_packet(iph, packet, options);
-    } else if (iph->protocol == IPPROTO_TCP) {
+    else if (iph->protocol == IPPROTO_TCP)
         handle_tcp_packet(iph, packet, options);
-    }else if (iph->protocol == IPPROTO_UDP) {
+    else if (iph->protocol == IPPROTO_UDP) {
+        // skip Ethernet and Ip header
         struct udphdr *udph = (struct udphdr *)(packet + 14 + iph->ihl * 4);
         int port = ntohs(udph->source); 
         options->scan_type = UDP;

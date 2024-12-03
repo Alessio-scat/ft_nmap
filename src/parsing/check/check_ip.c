@@ -1,12 +1,11 @@
 #include "../../../include/ft_nmap.h"
 
-// Valider si c'est une IP ou un nom de domaine
+// Valide Ip or domain
 int validate_ip_or_hostname(char *input) {
     struct sockaddr_in sa;
     if (inet_pton(AF_INET, input, &(sa.sin_addr)) == 1)
         return 1; // Adresse IP valide
 
-    // Expression régulière pour valider un nom de domaine
     const char *regex_pattern = "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$";
     regex_t regex;
     int ret = regcomp(&regex, regex_pattern, REG_EXTENDED);
@@ -20,7 +19,6 @@ int validate_ip_or_hostname(char *input) {
     return ret == 0 ? 1 : 0;
 }
 
-// Résoudre un nom de domaine en adresse IP
 char *resolve_hostname_to_ip(const char *hostname, ScanOptions *options) {
     (void)options;
     struct addrinfo hints, *res;
@@ -28,12 +26,12 @@ char *resolve_hostname_to_ip(const char *hostname, ScanOptions *options) {
     char *ip_address = NULL;
     
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;  // IPv4 uniquement
+    hints.ai_family = AF_INET;  // IPv4 
 
     if (getaddrinfo(hostname, NULL, &hints, &res) == 0) {
         ipv4 = (struct sockaddr_in *)res->ai_addr;
         ip_address = strdup(inet_ntoa(ipv4->sin_addr));
-        freeaddrinfo(res);  // Libérer la mémoire allouée par getaddrinfo
+        freeaddrinfo(res);
     } else {
         return NULL;
     }
@@ -43,11 +41,10 @@ char *resolve_hostname_to_ip(const char *hostname, ScanOptions *options) {
 
 void handle_ip_option(int *i, int ac, char **av, ScanOptions *options) {
 
-    // Parcourir les arguments suivants jusqu'à rencontrer un autre flag ou la fin des arguments
     while (*i + 1 < ac && strncmp(av[*i + 1], "--", 2) != 0) {
         char *input = av[*i + 1];
 
-        // Ajoute l'IP ou le nom d'hôte à la liste des IP
+        // Add IP or domain name to list ip 
         options->ip_list = realloc(options->ip_list, (options->ip_count + 1) * sizeof(char *));
         if (options->ip_list == NULL) {
             fprintf(stderr, "Error: Memory allocation failed for ip_list.\n");
@@ -62,7 +59,7 @@ void handle_ip_option(int *i, int ac, char **av, ScanOptions *options) {
         (*i)++;
     }
 
-    // Vérifier si aucune IP n'a été ajoutée
+    // Check if no IP has been added
     if (options->ip_count == 0) {
         fprintf(stderr, "Error: --ip option requires at least one IP address or hostname.\n");
         exit(1);
