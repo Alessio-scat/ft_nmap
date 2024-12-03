@@ -25,6 +25,7 @@ void print_help() {
 void parse_arguments(int ac, char **av, ScanOptions *options) {
     for (int i = 1; i < ac; i++) {
         if (strcmp(av[i], "--help") == 0) {
+            cleanup_options(options);
             print_help(); exit(0);
         } else if (strcmp(av[i], "--ip") == 0) {
             handle_ip_option(&i, ac, av, options);

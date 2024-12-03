@@ -1,7 +1,7 @@
 #include "ft_nmap.h"
 
 void thread_smaller_than_scan(ScanOptions *options) {
-    int num_threads = options->speedup; // Nombre de threads demandé
+    int num_threads = options->speedup;
     pthread_t threads[num_threads];
     ScanThreadData thread_data[num_threads];
 
@@ -9,7 +9,7 @@ void thread_smaller_than_scan(ScanOptions *options) {
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
-    // Total de combinaisons (scans x ports)
+    // Total combinations (scans x ports)
     int total_combinations = options->scan_count * options->portsTabSize;
     int combinations_per_thread = total_combinations / num_threads;
     int extra_combinations = total_combinations % num_threads;
@@ -21,31 +21,31 @@ void thread_smaller_than_scan(ScanOptions *options) {
         thread_data[i].options = options;
         thread_data[i].dest = dest;
 
-        // Calculer les combinaisons pour ce thread
+        // Calculate combinations for this thread
         int start_combination = current_combination;
         int end_combination = start_combination + combinations_per_thread + (i < extra_combinations ? 1 : 0);
 
-        // Si c'est le dernier thread, inclure toutes les combinaisons restantes
+        // If this is the last thread, include all remaining combinations
         if (i == num_threads - 1) {
             end_combination = total_combinations;
         }
 
         current_combination = end_combination;
 
-        // Diviser les scans et les ports
+        // Split scans and ports
         thread_data[i].start_scan = start_combination / options->portsTabSize;
         thread_data[i].end_scan = end_combination / options->portsTabSize;
 
         thread_data[i].start_port = start_combination % options->portsTabSize;
         thread_data[i].end_port = end_combination % options->portsTabSize;
 
-        // Si le thread couvre plusieurs scans, ajuster les ports
+        // If the thread covers multiple scans, adjust the ports
         if (thread_data[i].start_scan != thread_data[i].end_scan) {
-            thread_data[i].start_port = 0;               // Début des ports pour le premier scan
-            thread_data[i].end_port = options->portsTabSize; // Fin des ports pour le dernier scan
+            thread_data[i].start_port = 0;              
+            thread_data[i].end_port = options->portsTabSize; 
         }
 
-        // Si c'est le dernier thread et que les ports doivent s'étendre
+        // If this is the last thread and the ports need to expand
         if (i == num_threads - 1) {
             thread_data[i].end_scan = options->scan_count;
             thread_data[i].end_port = options->portsTabSize;
@@ -63,7 +63,7 @@ void thread_smaller_than_scan(ScanOptions *options) {
         //     thread_data[i].start_port, 
         //     thread_data[i].end_port);
 
-        // Créer le thread
+        // Create the thread
         if (pthread_create(&threads[i], NULL, threaded_scan, &thread_data[i]) != 0) {
             perror("Failed to create thread");
             exit(1);
@@ -77,9 +77,9 @@ void thread_smaller_than_scan(ScanOptions *options) {
 void run_scans_by_techniques(ScanOptions *options) {
     int max_threads = options->scan_count * options->portsTabSize;
     if (options->speedup > max_threads) {
-        printf("Nombre de threads demandé (%d) dépasse le maximum nécessaire (%d). Limitation automatique à %d threads.\n", 
+        printf("Number of threads requested (%d) exceeds the maximum necessary (%d). Automatic limitation to %d threads.\n", 
                options->speedup, max_threads, max_threads);
-        options->speedup = max_threads; // Réduire au maximum nécessaire
+        options->speedup = max_threads; // Reduce to the minimum necessary
     }
     if (options->speedup < options->scan_count) {
         thread_smaller_than_scan(options);
@@ -94,17 +94,17 @@ void run_scans_by_techniques(ScanOptions *options) {
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = inet_addr(options->ip_address);
 
-    // Calculer les ports par scan et les threads associés
+    // Calculate ports per scan and associated threads
     int threads_per_scan = num_threads / options->scan_count;
     int extra_threads = num_threads % options->scan_count;
 
     int thread_index = 0;
 
     for (int scan_index = 0; scan_index < options->scan_count; scan_index++) {
-        // Nombre de threads pour ce scan
+        // Number of threads for this scan
         int threads_for_this_scan = threads_per_scan + (scan_index < extra_threads ? 1 : 0);
 
-        // Ports par thread pour ce scan
+        // Ports per thread for this scan
         int ports_per_thread = options->portsTabSize / threads_for_this_scan;
         int extra_ports = options->portsTabSize % threads_for_this_scan;
 
@@ -116,20 +116,20 @@ void run_scans_by_techniques(ScanOptions *options) {
 
             thread_data[thread_index].dest = dest;
 
-            // Affecter le scan à ce thread
+            // Assign scan to this thread
             thread_data[thread_index].start_scan = scan_index;
             thread_data[thread_index].end_scan = scan_index + 1;
 
-            // Calculer les plages de ports
+            // Calculate port ranges
             thread_data[thread_index].start_port = current_start_port;
             thread_data[thread_index].end_port = thread_data[thread_index].start_port + ports_per_thread;
 
-            // Ajouter les ports supplémentaires pour les premiers threads
+            // Add additional ports for first threads
             if (i < extra_ports) {
                 thread_data[thread_index].end_port++;
             }
 
-            // Mettre à jour le début de la prochaine plage
+            // Update the start of the next range
             current_start_port = thread_data[thread_index].end_port;
 
             // printf("Thread %d: scans [", thread_index);
@@ -143,7 +143,7 @@ void run_scans_by_techniques(ScanOptions *options) {
             //     thread_data[thread_index].start_port, 
             //     thread_data[thread_index].end_port);
 
-            // Créer le thread
+            // Create the thread
             if (pthread_create(&threads[thread_index], NULL, threaded_scan, &thread_data[thread_index]) != 0) {
                 perror("Failed to create thread");
                 exit(1);

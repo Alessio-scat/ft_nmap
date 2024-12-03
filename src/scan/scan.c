@@ -45,7 +45,7 @@ pcap_t *init_pcap(const char *interface) {
         exit(1);
     }
 
-    pcap_freecode(&fp);  // Libérer la mémoire du filtre BPF
+    pcap_freecode(&fp); 
     global_handle = handle;
     return handle;
 }

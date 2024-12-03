@@ -30,7 +30,6 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
     printf("Nmap scan report for %s (%s)\n", options->ip_host, options->ip_address);
     int total_ports = options->portsTabSize;
     print_os_detection(options);
-    // Boucle sur chaque technique de scan dans l'ordre
     for (int technique = 0; technique < options->scan_count; technique++) {
         int scan_type = options->tabscan[technique];
         const char *scan_name = get_scan_name(scan_type);
@@ -42,26 +41,26 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
         int filtered_count = 0;
         int open_filtered_count = 0;
 
-        // Comptage des ports dans les états spécifiés
         for (int i = 0; i < options->portsTabSize; i++) {
-            if (strcmp(options->status[technique][i], excluded_state) == 0) {
+            int port = options->portsTab[i];
+            if (strcmp(options->status[technique][port - 1], excluded_state) == 0) {
                 excluded_count++;
             }
-            if (strcmp(options->status[technique][i], "FILTERED") == 0) {
+            if (strcmp(options->status[technique][port - 1], "FILTERED") == 0) {
                 filtered_count++;
             }
-            if (strcmp(options->status[technique][i], "OPEN|FILTERED") == 0) {
+            if (strcmp(options->status[technique][port - 1], "OPEN|FILTERED") == 0) {
                 open_filtered_count++;
             }
         }
-        // Affichage des résultats
         printf("\nScan type: %s\n", scan_name);
         if (total_ports > 25) {
-            const char *first_state = options->status[technique][0];
+            const char *first_state = options->status[technique][options->portsTab[0]];
             int all_ports_identical = 1;
 
             for (int i = 0; i < total_ports; i++) {
-                if (strcmp(options->status[technique][i], first_state) != 0) {
+                int port = options->portsTab[i];
+                if (strcmp(options->status[technique][port - 1], first_state) != 0) {
                     all_ports_identical = 0;
                     break;
                 }
@@ -71,7 +70,7 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
                 continue;
             }
         }
-        if (excluded_count > 0) {
+        if (excluded_count > 0 && total_ports > 25) {
             printf("Not shown: %d ports %s\n", excluded_count, excluded_state);
         }
         if (filtered_count > 20) {
@@ -84,18 +83,14 @@ void print_ports_excluding_state(ScanOptions *options, char *excluded_state) {
             continue;
         printf("PORT    SERVICE         STATE\n");
 
-        // Parcourir les ports définis dans portsTab
         for (int i = 0; i < options->portsTabSize; i++) {
             int port = options->portsTab[i];
-            const char *port_status = options->status[technique][port - 1]; // Statut du port (via index)
+            const char *port_status = options->status[technique][port - 1]; 
 
-            // Vérifier si le port doit être affiché
             if (strcmp(port_status, excluded_state) != 0 || (options->flag_ports == 1 && total_ports < 26)){
                 if ((filtered_count < 20 || strcmp(port_status, "FILTERED") != 0) &&
                     (open_filtered_count < 20 || strcmp(port_status, "OPEN|FILTERED") != 0)){
                     const char *service_name = get_service_name(port);
-
-                    // Afficher les informations du port
                     if (scan_type == 6) { // UDP
                         printf("%d/udp    %-15s  %s\n", port, service_name, port_status);
                     } else { // TCP

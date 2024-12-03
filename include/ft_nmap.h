@@ -46,8 +46,7 @@ typedef struct {
     int scan_type;
     int portsTab[MAX_PORT];
     int flag_ports;
-    int portsTabSize;   
-    //file
+    int portsTabSize;  
     char *file;
     char **ip_list;
     int ip_count;
@@ -71,23 +70,18 @@ typedef struct {
 
 typedef struct {
     pcap_t *pcap_handle;  // Handle de capture pcap
-    int target_port;      // Port cible à analyser
-    int port_status;      // Statut du port (ouvert, fermé, filtré)
+    int target_port;      // Target port to scan
+    int port_status;      // Port status (open, closed, filtered)
 } pcap_data_t;
 
 typedef struct {
     int thread_id;
     ScanOptions *options;
-    int start_scan;  // Index du scan (type) de départ
-    int end_scan;    // Index du scan (type) de fin
-    int start_port;  // Port de départ
-    int end_port;    // Port de fin
-    int sock;        // Socket pré-initialisé
-    pcap_t *handle;  // Handle pcap pré-initialisé
-    char *packet;    // Buffer de paquet partagé
-    struct iphdr *iph; // Pointeur vers l'en-tête IP
-    struct sockaddr_in dest; // Adresse cible
-    int technique;
+    int start_scan;  // Starting scan index (type)
+    int end_scan;    // End scan index (type)
+    int start_port;  // Port of departure
+    int end_port;    // End port
+    struct sockaddr_in dest;
 } ScanThreadData;
 
 extern pcap_t *global_handle;

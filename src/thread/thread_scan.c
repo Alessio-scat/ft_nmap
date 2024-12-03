@@ -3,15 +3,14 @@
 void *threaded_scan(void *arg) {
     ScanThreadData *data = (ScanThreadData *)arg;
 
-    // Créez un buffer local par thread
+    // Create a local buffer per thread
     char packet[4096];
     memset(packet, 0, 4096);
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest = data->dest;
 
-    // Boucle sur les scans assignés
     for (int scan = data->start_scan; scan < data->end_scan; scan++) {
-        int scan_type = data->options->tabscan[scan]; // Utiliser une copie locale
+        int scan_type = data->options->tabscan[scan]; // Use a local copy
 
         int sock;
         if (scan_type == 6) {
