@@ -50,7 +50,6 @@ int main(int ac, char **av) {
     if (options.flag_ports == 0) {
         for (int port = 1; port <= 1024; port++)
             options.portsTab[port - 1] = port;
-        // Mettre à jour la taille du tableau
         options.portsTabSize = 1024;
     }
 
