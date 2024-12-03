@@ -40,10 +40,10 @@ void cleanup_options(ScanOptions *options) {
         free(options->ip_address);
         options->ip_address = NULL;
     }
-    if (options->file) {
-        free(options->file);
-        options->file = NULL;
-    }
+    // if (options->file) {
+    //     free(options->file);
+    //     options->file = NULL;
+    // }
     if (options->ip_list) {
         for (int i = 0; i < options->ip_count; i++) {
             free(options->ip_list[i]);

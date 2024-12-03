@@ -1,6 +1,10 @@
 #include "ft_nmap.h"
 
-// Fonction pour calculer le checksum
+// Function to display formatted result
+void print_scan_result(int port, const char *service, const char *state) {
+    printf("        %-7d%-15s%-10s\n", port, service, state);
+}
+
 unsigned short checksum(void *b, int len) {
     unsigned short *buf = b;
     unsigned int sum = 0;
@@ -16,7 +20,6 @@ unsigned short checksum(void *b, int len) {
     return result;
 }
 
-// Fonction pour récupérer l'adresse IP locale
 char *get_local_ip(int use_loopback, ScanOptions *options) {
 
     if (options->local_ip) {
@@ -33,15 +36,15 @@ char *get_local_ip(int use_loopback, ScanOptions *options) {
     }
 
     for (ifa = ifap; ifa != NULL; ifa = ifa->ifa_next) {
-        // Vérifier si c'est une interface IPv4
+        // check if it's IPv4
         if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
-            // Si use_loopback est activé, retourne l'adresse IP de la loopback (127.0.0.1)
+            // If use_loopback is enabled, returns the loopback IP address (127.0.0.1)
             if (use_loopback && (ifa->ifa_flags & IFF_LOOPBACK)) {
                 addr = strdup(inet_ntoa(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr));
                 break;
             }
 
-            // Sinon, ignorer la loopback et prendre une interface active non-loopback
+            // Otherwise, ignore the loopback and take an active non-loopback interface
             if ((ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_LOOPBACK)) {
                 addr = strdup(inet_ntoa(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr));
                 break;
@@ -70,11 +73,11 @@ char *get_local_interface(int use_loopback, ScanOptions *options) {
         return NULL;
     }
 
-    // Forcer l'interface loopback si `use_loopback` est défini
+    // Force interface loopback if `use_loopback` is defined
     if (use_loopback) {
         local_interface = strdup("lo");
     } else {
-        // Parcours la liste des interfaces pour trouver une interface valide autre que loopback
+        // Go through the list of interfaces to find a valid interface other than loopback
         for (dev = alldevs; dev != NULL; dev = dev->next) {
             if (dev->flags & PCAP_IF_UP && !(dev->flags & PCAP_IF_LOOPBACK)) {
                 local_interface = strdup(dev->name);
@@ -147,6 +150,7 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
 void reset_status(ScanOptions *options, int scan_count, int max_ports) {
     for (int i = 0; i < scan_count; i++) {
         for (int j = 0; j < max_ports; j++) {
+            // Reset based on tabscan value
             if (options->tabscan[i] == 6) {
                 strcpy(options->status[i][j], "OPEN|FILTERED");
             } else if (options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4) {
