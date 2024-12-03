@@ -9,7 +9,7 @@ const char *get_service_name(int port) {
             return services_tcp[i].name;
         }
     }
-    return "unknown";  // Si le port n'est pas dans la liste
+    return "unknown";
 }
 
 void print_os_detection(ScanOptions *options){

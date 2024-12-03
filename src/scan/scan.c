@@ -45,8 +45,7 @@ pcap_t *init_pcap(const char *interface) {
         exit(1);
     }
 
-    pcap_freecode(&fp);
-    printf("Interface %s ouverte avec un filtre TCP.\n", interface);
+    pcap_freecode(&fp);  // Libérer la mémoire du filtre BPF
     global_handle = handle;
     return handle;
 }
@@ -66,6 +65,7 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options) {
 void tcp_scan_all_ports(ScanOptions *options) {
     int sock;
     char packet[4096];
+    memset(packet, 0, 4096);
     struct iphdr *iph = (struct iphdr *)packet;
     struct sockaddr_in dest;
     memset(&dest, 0, sizeof(dest));
@@ -85,7 +85,6 @@ void tcp_scan_all_ports(ScanOptions *options) {
             sock = create_raw_socket();
             build_ip_header(iph, &dest, options);
         }
-
         // Send packets for the current scan type
         send_all_packets(sock, packet, iph, &dest, options);
         close(sock);

@@ -115,7 +115,6 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options);
 unsigned short checksum(void *b, int len);
 char *get_local_ip(int use_loopback, ScanOptions *options);
 char *get_local_interface(int use_loopback, ScanOptions *options);
-void print_scan_result(int port, const char *service, const char *state);
 void print_help();
 void reset_status(ScanOptions *options, int scan_count, int max_ports);
 
