@@ -15,8 +15,6 @@ void print_starting_message() {
     
     // Formater la date et l'heure (2024-10-07 17:42 CEST)
     strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M %Z", local_time);
-
-    // Afficher le message de démarrage
     printf("Starting ft_nmap at %s\n", time_str);
 }
 
@@ -28,7 +26,7 @@ const char* get_scan_name(int scan_code) {
         case XMAS: return "XMAS";
         case ACK: return "ACK";
         case UDP: return "UDP";
-        default: return "UNKNOWN"; // Pour gérer des cas non définis
+        default: return "UNKNOWN";
     }
 }
 
@@ -37,7 +35,7 @@ void print_scan_types(ScanOptions *options) {
     for (int i = 0; i < options->scan_count; i++) {
         printf("%s", get_scan_name(options->tabscan[i]));
         if (i < options->scan_count - 1) {
-            printf(", "); // Ajouter une virgule entre les types de scan
+            printf(", ");
         }
     }
     printf("\n");
@@ -53,9 +51,8 @@ int main(int ac, char **av) {
 
     // Capturer le temps de début
     struct timeval start, end;
-    gettimeofday(&start, NULL);  // Temps de début
+    gettimeofday(&start, NULL);
 
-    // Parsing des arguments et configuration
     parse_arguments(ac, av, &options);
     if (options.flag_ports == 0) {
         // Remplir options->portsTab avec les valeurs de 1 à 1024
@@ -66,40 +63,6 @@ int main(int ac, char **av) {
         options.portsTabSize = 1024;
     }
     initialize_status(&options, options.scan_count, MAX_PORT);
-        // for(int i = 0; i < options.ip_count; i++){
-        //     handle_ip_option_in_file(&i, &options);
-        //     int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
-        //     options.local_ip = get_local_ip(use_loopback);
-        //     options.local_interface = get_local_interface(use_loopback);
-        //     // Effectuer le scan
-        //     pcap_t *handle = init_pcap(options.local_interface);
-        //     print_starting_message();
-        //     if(options.speedup != 0)
-        //         run_scans_by_techniques(&options);
-        //     else
-        //         tcp_scan_all_ports(&options);
-        //     wait_for_responses(handle, &options);
-        //     // Close the raw/UDP socket and pcap after all scans
-        //     pcap_close(handle);
-        //     // Afficher les ports, en excluant ceux dans l'état "CLOSED"
-        //     print_ports_excluding_state(&options, "CLOSED");
-        //     printf("\n");
-        //     reset_status(&options, options.scan_count, MAX_PORT);
-        // }
-
-    // Libérer la mémoire
-    // for (int j = 0; j < options.ip_count; j++)
-    //     free(options.ip_list[j]);
-    // free(options.ip_list);
-    // for (int i = 0; i < options.scan_count; i++) {
-    //     for (int j = 0; j < MAX_PORT; j++) {
-    //         if (options.status[i][j] != NULL) {
-    //             free(options.status[i][j]);
-    //         }
-    //     }
-    //     free(options.status[i]);
-    // }
-    // free(options.status);
     for(int i = 0; i < options.ip_count; i++){
         handle_ip_option_in_file(&i, &options);
         int use_loopback = strcmp(options.ip_address, "127.0.0.1") == 0;
@@ -120,11 +83,10 @@ int main(int ac, char **av) {
         reset_status(&options, options.scan_count, MAX_PORT);
     }
 
-    free_nmap(&options);
+    // free_nmap(&options);
+    cleanup_options(&options);
 
-    
-    // Capturer le temps de fin
-    gettimeofday(&end, NULL);  // Temps de fin
+    gettimeofday(&end, NULL);
 
     // Calculer le temps écoulé (en secondes et microsecondes)
     double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1000000.0;

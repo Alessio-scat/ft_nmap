@@ -24,10 +24,7 @@ void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *
     // Calculer le checksum TCP en utilisant le pseudo-header et l'en-tête TCP
     tcph->check = checksum((unsigned short *)pseudogram, psize);
 
-    // printf("Envoi d'un paquet SYN vers %s:%d\n", inet_ntoa(dest->sin_addr), ntohs(tcph->dest));
-
     if (sendto(sock, packet, iph->tot_len, 0, (struct sockaddr *)dest, sizeof(*dest)) < 0) {
-        // print_tcphdr(tcph);
         perror("Échec de l'envoi du paquet");
     }
     free(pseudogram);
@@ -41,19 +38,16 @@ void send_all_packets(int sock, char *packet, struct iphdr *iph, struct sockaddr
         dest->sin_port = htons(target_port); // Définir le port cible
 
         if (options->scan_type == UDP) {
-            // Initialiser les en-têtes IP et UDP
             memset(packet, 0, 4096); // Nettoyer le buffer
             struct udphdr *udph = (struct udphdr *)(packet + sizeof(struct iphdr));
 
             build_udp_header_udp(udph, target_port);
 
-            // Envoyer le paquet
             if (sendto(sock, packet, htons(iph->tot_len), 0,
                        (struct sockaddr *)dest, sizeof(*dest)) < 0) {
                 perror("Failed to send UDP packet");
             }
         } else {
-            // Construire et envoyer les paquets TCP
             build_tcp_header((struct tcphdr *)(packet + sizeof(struct iphdr)), target_port, options);
             send_packet(sock, packet, iph, dest);
         }

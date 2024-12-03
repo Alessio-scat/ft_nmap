@@ -115,7 +115,6 @@ void wait_for_responses(pcap_t *handle, ScanOptions *options);
 unsigned short checksum(void *b, int len);
 char *get_local_ip(int use_loopback, ScanOptions *options);
 char *get_local_interface(int use_loopback, ScanOptions *options);
-void print_scan_result(int port, const char *service, const char *state);
 void print_help();
 void reset_status(ScanOptions *options, int scan_count, int max_ports);
 
@@ -130,6 +129,8 @@ int create_raw_socket();
 
 //thread
 void run_scans_by_techniques(ScanOptions *options);
+void build_tcp_header_thread(struct tcphdr *tcph, int target_port, int scan_type);
+void *threaded_scan(void *arg);
 
 int create_udp_socket();
 void build_udp_header_udp(struct udphdr *udph, int target_port);

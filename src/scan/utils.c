@@ -1,11 +1,5 @@
 #include "ft_nmap.h"
 
-// Fonction pour afficher le résultat formaté
-void print_scan_result(int port, const char *service, const char *state) {
-    printf("        %-7d%-15s%-10s\n", port, service, state);
-}
-
-
 // Fonction pour calculer le checksum
 unsigned short checksum(void *b, int len) {
     unsigned short *buf = b;
@@ -122,7 +116,7 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
         }
 
         for (int j = 0; j < num_ports; j++) {
-            options->status[i][j] = malloc(15 * sizeof(char)); // Augmenter la taille allouée
+            options->status[i][j] = malloc(15 * sizeof(char));
             if (options->status[i][j] == NULL) {
                 for (int l = 0; l < j; l++) {
                     free(options->status[i][l]);
@@ -153,7 +147,6 @@ void initialize_status(ScanOptions *options, int num_techniques, int num_ports) 
 void reset_status(ScanOptions *options, int scan_count, int max_ports) {
     for (int i = 0; i < scan_count; i++) {
         for (int j = 0; j < max_ports; j++) {
-            // Réinitialisation basée sur la valeur de tabscan
             if (options->tabscan[i] == 6) {
                 strcpy(options->status[i][j], "open|filtered");
             } else if (options->tabscan[i] == 2 || options->tabscan[i] == 3 || options->tabscan[i] == 4) {
