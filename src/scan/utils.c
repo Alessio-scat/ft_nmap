@@ -1,9 +1,13 @@
 #include "ft_nmap.h"
 
-// Function to display formatted result
-void print_scan_result(int port, const char *service, const char *state) {
-    printf("        %-7d%-15s%-10s\n", port, service, state);
-}
+/*
+ * getifaddrs: Retrieves the list of all network interfaces on the system 
+ * for iterating and checking their properties.
+ * inet_ntoa: Converts a binary IPv4 address to a human-readable string.
+ * pcap_findalldevs: Lists available network interfaces for packet capture 
+ * to identify the active or loopback interface.
+ */
+
 
 unsigned short checksum(void *b, int len) {
     unsigned short *buf = b;

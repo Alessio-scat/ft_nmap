@@ -1,5 +1,11 @@
 #include "ft_nmap.h"
 
+/*
+ * ntohs: Converts a 16-bit integer from network byte order (big-endian) to host byte order.
+ * Commonly used to interpret port numbers received in network packets.
+ */
+
+
 void os_detection(const struct iphdr *iph, ScanOptions *options){
     if(options->OS == 1)
     {

@@ -1,6 +1,12 @@
 #include "ft_nmap.h"
 
-
+/*
+ * pshdr.source_address: Holds the source IP address from the IP header.
+ * pshdr.dest_address: Contains the destination IP address from the IP header.
+ * pshdr.placeholder: A zero-filled field used in checksum calculations for alignment.
+ * pshdr.protocol: Specifies the protocol being used (TCP in this case).
+ * pshdr.tcp_length: Stores the length of the TCP header, converted to network byte order.
+ */
 
 void send_packet(int sock, char *packet, struct iphdr *iph, struct sockaddr_in *dest) {
     struct tcphdr *tcph = (struct tcphdr *)(packet + sizeof(struct iphdr));

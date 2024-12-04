@@ -1,5 +1,25 @@
 #include "ft_nmap.h"
 
+/*
+ * tcph->ack_seq: Acknowledgment number, set to 0 for scans.
+ * tcph->doff: Data offset, specifies the size of the TCP header (minimum 5).
+ * tcph->syn: SYN flag, set for SYN scans to initiate a connection.
+ * tcph->fin: FIN flag, set for FIN or XMAS scans to indicate connection termination.
+ * tcph->rst: RST flag, always set to 0 for scan packets.
+ * tcph->psh: PSH flag, set for XMAS scans to push data immediately.
+ * tcph->urg: URG flag, set for XMAS scans to indicate urgent data.
+ * tcph->ack: ACK flag, set for ACK scans to acknowledge a connection.
+ * tcph->window: Window size for the TCP packet, set to a fixed value (5840).
+ * tcph->check: Checksum field, initially 0 and calculated later.
+ * tcph->urg_ptr: Urgent pointer, set to 0 for scans.
+ * htonl: Converts a 32-bit integer from host byte order to network byte order (big-endian).
+ * Commonly used for IP addresses and other 32-bit values in network communication.
+ * htons: Converts a 16-bit integer from host byte order to network byte order (big-endian).
+ * Commonly used for port numbers and other 16-bit values in network communication.
+ */
+
+
+
 int create_raw_socket() {
     int optval = 1;
     int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_TCP);
